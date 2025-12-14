@@ -150,7 +150,7 @@ saveChildProgress(childId)
     if (child) {
         localStorage.setItem(`progress_${childId}`, JSON.stringify(child.progress));
     }
-}
+
 
 loadChildProgress(childId) {
     const raw = localStorage.getItem(`progress_${childId}`);
@@ -168,4 +168,5 @@ loadChildProgress(childId) {
 
 // Globale Instanz
 const dataManager = new DataManager();
+
 
