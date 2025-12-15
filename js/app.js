@@ -364,7 +364,6 @@ function generateStoryFromWords(words) {
     const intro = `Es ist Zeit für eine kleine Geschichte.`;
     const extra = `Am Ende gibt es eine große Umarmung und ein fröhliches Lächeln.`;
     const outro = `Dann sagt die Geschichte Gute Nacht und kichert ein letztes Mal.`;
-    const name = currentChild ? currentChild.name : 'Das Kind';
     const phrases = [p0, p1, p2, p3];
     const mid = phrases.join(', ');
     return `${intro} ${name} entdeckt heute ${mid}. ${extra} ${outro}`;
@@ -903,6 +902,7 @@ function handleRetry() {
 }
 
 console.log('📱 App-Code geladen');
+
 
 
 
