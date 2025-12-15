@@ -461,6 +461,14 @@ h2 {
     line-height: 1.5;
     font-size: 1rem;
 }
+
+.voice-select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #fff;
+    margin-right: 10px;
+}
 .profile-row .value {
     font-weight: 600;
     color: #333;
@@ -517,6 +525,7 @@ h2 {
     background-position: 100% 50%;
   }
 }
+
 
 
 
