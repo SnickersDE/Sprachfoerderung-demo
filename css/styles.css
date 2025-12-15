@@ -368,7 +368,7 @@ h2 {
     display: inline-block;
     background: white;
     border-radius: 50%;
-    padding: 60px;
+    padding: 36px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     margin-bottom: 20px;
     transition: all 0.3s;
@@ -389,7 +389,7 @@ h2 {
 }
 
 #mic-icon {
-    font-size: 5rem;
+    font-size: 2rem;
 }
 
 .status-text {
@@ -500,7 +500,7 @@ h2 {
 .fade-in {
     animation: fadeIn 400ms ease;
 }
-.story-large-image img {
+.story-sequence img {
     max-width: 500px;
     max-height: 380px;
     border-radius: 20px;
@@ -537,6 +537,7 @@ h2 {
     background-position: 100% 50%;
   }
 }
+
 
 
 
