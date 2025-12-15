@@ -451,6 +451,16 @@ h2 {
     font-size: 0.95rem;
 }
 
+.story-text {
+    background: #fff;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    margin-top: 20px;
+    color: #333;
+    line-height: 1.5;
+    font-size: 1rem;
+}
 .profile-row .value {
     font-weight: 600;
     color: #333;
@@ -507,6 +517,7 @@ h2 {
     background-position: 100% 50%;
   }
 }
+
 
 
 
