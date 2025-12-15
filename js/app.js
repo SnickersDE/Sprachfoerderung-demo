@@ -151,7 +151,76 @@ function selectChild(childId) {
     document.getElementById('child-name').textContent = `${currentChild.name}s Fortschritt`;
     
     showScreen('overview');
+    renderProfileCard();
     renderLevelsGrid();
+}
+function renderProfileCard() {
+    const container = document.getElementById('profile-card');
+    if (!container || !currentChild) return;
+    const group = currentChild.group || '–';
+    container.innerHTML = `
+        <div class="profile-row">
+            <span class="label">Name</span>
+            <span class="value" id="pc-name">${currentChild.name}</span>
+            <button class="icon-btn" id="edit-name" aria-label="Name bearbeiten">✎</button>
+        </div>
+        <div class="profile-row">
+            <span class="label">Alter</span>
+            <span class="value" id="pc-age">${currentChild.age}</span>
+            <button class="icon-btn" id="edit-age" aria-label="Alter bearbeiten">✎</button>
+        </div>
+        <div class="profile-row">
+            <span class="label">Gruppe</span>
+            <span class="value" id="pc-group">${group}</span>
+            <button class="icon-btn" id="edit-group" aria-label="Gruppe bearbeiten">✎</button>
+        </div>
+    `;
+    const editName = document.getElementById('edit-name');
+    const editAge = document.getElementById('edit-age');
+    const editGroup = document.getElementById('edit-group');
+    editName.onclick = () => inlineEdit('pc-name', 'text', v => {
+        const val = v.trim();
+        if (val) {
+            currentChild.name = val;
+            dataManager.saveUsers();
+            document.getElementById('child-name').textContent = `${currentChild.name}s Fortschritt`;
+            renderProfileCard();
+        }
+    });
+    editAge.onclick = () => inlineEdit('pc-age', 'number', v => {
+        const num = parseInt(v, 10);
+        if (!isNaN(num) && num > 0) {
+            currentChild.age = num;
+            dataManager.saveUsers();
+            renderProfileCard();
+        }
+    });
+    editGroup.onclick = () => inlineEdit('pc-group', 'text', v => {
+        const val = v.trim();
+        currentChild.group = val || '';
+        dataManager.saveUsers();
+        renderProfileCard();
+    });
+}
+
+function inlineEdit(valueId, type, onSave) {
+    const el = document.getElementById(valueId);
+    if (!el) return;
+    const current = el.textContent;
+    const input = document.createElement('input');
+    input.type = type;
+    input.value = current === '–' ? '' : current;
+    input.className = 'profile-input';
+    el.replaceWith(input);
+    input.focus();
+    const finalize = () => {
+        onSave(input.value);
+    };
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') finalize();
+        if (e.key === 'Escape') renderProfileCard();
+    });
+    input.addEventListener('blur', finalize);
 }
 
 // Render Levels-Grid
@@ -434,3 +503,4 @@ function handleRetry() {
 }
 
 console.log('📱 App-Code geladen');
+
