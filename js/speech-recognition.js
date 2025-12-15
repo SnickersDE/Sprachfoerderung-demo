@@ -6,7 +6,8 @@ class SpeechRecognitionModule {
         this.isRecording = false;
         this.onResult = null;
         this.onError = null;
-        
+        this.isReadingMode = false;
+     
         // KONFIGURATION - HIER ANPASSBAR
         this.SIMILARITY_THRESHOLD = 0.8; // Basisschwelle
         this.LANGUAGE = 'de-DE';
@@ -28,8 +29,8 @@ class SpeechRecognitionModule {
         // Initialisiere Speech Recognition
         this.recognition = new SpeechRecognition();
         this.recognition.lang = this.LANGUAGE;
-        this.recognition.continuous = false; // Nur ein Wort
-        this.recognition.interimResults = false; // Nur finale Ergebnisse
+        this.recognition.continuous = false;
+        this.recognition.interimResults = false;
         this.recognition.maxAlternatives = 5; // Mehr Alternativen für robustere Ergebnisse
 
         // Event Handler
@@ -40,20 +41,35 @@ class SpeechRecognitionModule {
 
         this.recognition.onresult = (event) => {
             console.log('📝 Speech Recognition Ergebnis:', event);
-            // Wähle die beste Alternative (höchste Confidence)
-            let bestAlt = event.results[0][0];
-            for (let i = 0; i < event.results[0].length; i++) {
-                const alt = event.results[0][i];
-                if (alt.confidence > bestAlt.confidence) bestAlt = alt;
+        
             }
-            const transcript = bestAlt.transcript.trim();
-            const confidence = bestAlt.confidence;
-            
-            console.log(`Erkanntes Wort: "${transcript}" (Konfidenz: ${(confidence * 100).toFixed(1)}%)`);
-            
-            if (this.onResult) {
-                this.onResult(transcript, confidence);
-            }
+        };
+          if (this.isReadingMode) {
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    // Nur finale Ergebnisse verarbeiten, um Spam zu vermeiden
+                    if (!result.isFinal && !this.recognition.interimResults) continue;
+                    let bestAlt = result[0];
+                    for (let j = 0; j < result.length; j++) {
+                        const alt = result[j];
+                        if (alt.confidence > bestAlt.confidence) bestAlt = alt;
+                    }
+                    const transcript = bestAlt.transcript.trim();
+                    const confidence = bestAlt.confidence;
+                    console.log(`Erkanntes Wort: "${transcript}" (Konfidenz: ${(confidence * 100).toFixed(1)}%)`);
+                    if (this.onResult) this.onResult(transcript, confidence);
+                }
+            } else {
+                let bestAlt = event.results[0][0];
+                for (let i = 0; i < event.results[0].length; i++) {
+                    const alt = event.results[0][i];
+                    if (alt.confidence > bestAlt.confidence) bestAlt = alt;
+                }
+                const transcript = bestAlt.transcript.trim();
+                const confidence = bestAlt.confidence;
+                console.log(`Erkanntes Wort: "${transcript}" (Konfidenz: ${(confidence * 100).toFixed(1)}%)`);
+                if (this.onResult) this.onResult(transcript, confidence);
+                }
         };
 
         this.recognition.onerror = (event) => {
@@ -107,6 +123,19 @@ class SpeechRecognitionModule {
         }
     }
 
+    // Lese-Modus aktivieren: kontinuierlich und mit Zwischen-Ergebnissen
+    setReadingMode(enabled) {
+        this.isReadingMode = !!enabled;
+        if (this.recognition) {
+            this.recognition.continuous = this.isReadingMode;
+            this.recognition.interimResults = this.isReadingMode;
+            this.recognition.maxAlternatives = this.isReadingMode ? 7 : 5;
+        }
+        // In Lesen-Modus etwas toleranter
+        this.SIMILARITY_THRESHOLD = this.isReadingMode ? 0.75 : 0.8;
+        // Längere Session ohne Autostop
+        this.MAX_RECORDING_TIME = this.isReadingMode ? 30000 : 5000;
+    }
     /**
      * REIM-VALIDIERUNG
      * ================
