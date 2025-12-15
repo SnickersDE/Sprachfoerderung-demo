@@ -497,7 +497,15 @@ h2 {
     border-radius: 8px;
     font-size: 1rem;
 }
-
+.fade-in {
+    animation: fadeIn 400ms ease;
+}
+.story-large-image img {
+    max-width: 500px;
+    max-height: 380px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
 /* Responsive */
 @media (max-width: 768px) {
     .container {
@@ -529,6 +537,7 @@ h2 {
     background-position: 100% 50%;
   }
 }
+
 
 
 
