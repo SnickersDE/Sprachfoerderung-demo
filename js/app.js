@@ -1,4 +1,4 @@
- 
+  
 
 // State
 let currentChild = null;
@@ -109,7 +109,7 @@ function setupEventListeners() {
             }
         });
     }
-     const storyStartBtn = document.getElementById('btn-story-start');
+    const storyStartBtn = document.getElementById('btn-story-start');
     if (storyStartBtn) {
         storyStartBtn.addEventListener('click', () => openStoryGame());
     }
@@ -135,7 +135,6 @@ function setupEventListeners() {
     if (playBtn) playBtn.addEventListener('click', () => playStory());
     const stopBtn = document.getElementById('btn-story-stop');
     if (stopBtn) stopBtn.addEventListener('click', () => stopStory());
-}  
     const providerSelect = document.getElementById('tts-provider-select');
     if (providerSelect) {
         providerSelect.addEventListener('change', () => {
@@ -155,6 +154,7 @@ function setupEventListeners() {
             }
         });
     }
+}
 
 // Screen Navigation
 function showScreen(screenName) {
@@ -284,7 +284,8 @@ function renderStoryGame() {
         openAiKey = openaiKeyInput.value || '';
         localStorage.setItem('openai_key', openAiKey);
     });
- }
+}
+
 function toggleStorySelection(word) {
     const w = word.toLowerCase();
     const idx = storySelected.findIndex(x => x.toLowerCase() === w);
@@ -356,15 +357,14 @@ function generateStoryFromWords(words) {
         return `${art} ${d.noun}`;
     };
     const name = currentChild ? currentChild.name : 'Das Kind';
-     const p0 = defPhrase(lower[0]);
+    const p0 = defPhrase(lower[0]);
     const p1 = defPhrase(lower[1]);
     const p2 = defPhrase(lower[2]);
     const p3 = defPhrase(lower[3]);
-    
     const intro = `Es ist Zeit für eine kleine Geschichte.`;
     const extra = `Am Ende gibt es eine große Umarmung und ein fröhliches Lächeln.`;
     const outro = `Dann sagt die Geschichte Gute Nacht und kichert ein letztes Mal.`;
-     const name = currentChild ? currentChild.name : 'Das Kind';
+    const name = currentChild ? currentChild.name : 'Das Kind';
     const phrases = [p0, p1, p2, p3];
     const mid = phrases.join(', ');
     return `${intro} ${name} entdeckt heute ${mid}. ${extra} ${outro}`;
@@ -420,9 +420,9 @@ function generateProceduralStory(words) {
 
 async function generateCreativeStoryOpenAI(words) {
     const name = currentChild ? currentChild.name : 'Ein Kind';
-    const prompt = `Schreibe eine kurze, kindgerechte, kreative und witzige Geschichte auf Deutsch. Bitte nicht zu moralisierend. Am besten mit Überraschungen und Wendungen.
-Sie soll warm klingen, flüssig vorgelesen werden können und maximal etwa eine halbe DIN-A4 Seite in Arial 11 sein (~250–300 Wörter).
-Baue die folgenden Begriffe natürlich und grammatikalisch korrekt ein (richtige Artikel, korrekte Aussprache!): ${words.join(', ')}.
+    const prompt = `Schreibe eine kurze, kindgerechte, kreative und witzige Geschichte auf Deutsch.
+Sie soll warm klingen, flüssig vorgelesen werden können und maximal etwa eine halbe DIN-A4 Seite in Arial 11 sein (~150–220 Wörter).
+Baue die folgenden Begriffe natürlich und grammatikalisch korrekt ein (richtige Artikel!): ${words.join(', ')}.
 Nenne das Kind "${name}" in der Geschichte. Vermeide Aufzählungs-Templates; erfinde frei und natürlich wirkende Sätze.`;
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -471,7 +471,7 @@ function playStory() {
 
 function stopStory() {
     window.speechSynthesis.cancel();
- if (currentAudio) {
+    if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;
     }
@@ -627,6 +627,7 @@ function renderLevelsGrid() {
     const container = document.getElementById('levels-grid');
     const levels = dataManager.getLevels();
     
+    renderProfileCard();
     container.innerHTML = '';
     
     if (!levels || levels.length === 0) {
