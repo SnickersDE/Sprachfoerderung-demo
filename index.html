@@ -36,23 +36,72 @@
             </div>
             <div class="breadcrumb">Start → Übersicht</div>
             <div id="profile-card" class="profile-card"></div>
-            <div id="story-card" class="level-card" role="button" tabindex="0" aria-label="Geschichten-Spiel öffnen">
+            <div id="story-card" class="level-card" role="button" tabindex="0" aria-label="Wortschatz-Spiel öffnen">
                 <div class="level-header">
                     <div class="level-icon">📖</div>
                     <div class="difficulty-badge difficulty-leicht">Spiel</div>
                 </div>
-                <h3>Geschichten Spiel</h3>
-                <p>Wähle vier Bilder und höre eine kurze, lustige Geschichte.</p>
+                <h3>Wortschatz Spiel (einsilbig)</h3>
+                <p>Erweitere den Wortschatz deines Kindes und lernt gemeinsam neue Wörter kennen.</p>
                 <button id="btn-story-start" class="btn btn-primary">Start</button>
             </div>
-            <div id="memory-card" class="level-card" role="button" tabindex="0" aria-label="Auditives Reim-Memory öffnen">
+            <div id="vocab2-card" class="level-card" role="button" tabindex="0" aria-label="Wortschatz-Spiel zweisilbig öffnen">
+                <div class="level-header">
+                    <div class="level-icon">📘</div>
+                    <div class="difficulty-badge difficulty-mittel">Spiel</div>
+                </div>
+                <h3>Wortschatz Spiel (zweisilbig)</h3>
+                <p>Erweitere den Wortschatz deines Kindes und lernt gemeinsam neue Wörter kennen.</p>
+                <button id="btn-vocab2-start" class="btn btn-primary">Start</button>
+            </div>
+            <div id="vocab3-card" class="level-card" role="button" tabindex="0" aria-label="Wortschatz-Spiel dreisilbig öffnen">
+                <div class="level-header">
+                    <div class="level-icon">📗</div>
+                    <div class="difficulty-badge difficulty-schwer">Spiel</div>
+                </div>
+                <h3>Wortschatz Spiel (dreisilbig)</h3>
+                <p>Erweitere den Wortschatz deines Kindes und lernt gemeinsam neue Wörter kennen.</p>
+                <button id="btn-vocab3-start" class="btn btn-primary">Start</button>
+            </div>
+            <div id="memory1-card" class="level-card" role="button" tabindex="0" aria-label="Auditives Reim-Memory Level 1 öffnen">
                 <div class="level-header">
                     <div class="level-icon">🧠</div>
                     <div class="difficulty-badge difficulty-leicht">Spiel</div>
                 </div>
-                <h3>Auditives Reim-Memory</h3>
+                <h3>Auditives Reim-Memory (Level 1)</h3>
                 <p>Höre ein Zielwort und finde passende Reime.</p>
-                <button id="btn-memory-start" class="btn btn-primary">Start</button>
+                <div class="progress-bar"><div id="memory1-progress-fill" class="progress-fill"></div></div>
+                <button id="btn-memory1-start" class="btn btn-primary">Start</button>
+            </div>
+            <div id="memory2-card" class="level-card" role="button" tabindex="0" aria-label="Auditives Reim-Memory Level 2 öffnen">
+                <div class="level-header">
+                    <div class="level-icon">🧠</div>
+                    <div class="difficulty-badge difficulty-mittel">Spiel</div>
+                </div>
+                <h3>Auditives Reim-Memory (Level 2)</h3>
+                <p>Höre ein Zielwort und finde passende Reime.</p>
+                <div class="progress-bar"><div id="memory2-progress-fill" class="progress-fill"></div></div>
+                <button id="btn-memory2-start" class="btn btn-primary">Start</button>
+            </div>
+            <div id="memory3-card" class="level-card" role="button" tabindex="0" aria-label="Auditives Reim-Memory Level 3 öffnen">
+                <div class="level-header">
+                    <div class="level-icon">🧠</div>
+                    <div class="difficulty-badge difficulty-schwer">Spiel</div>
+                </div>
+                <h3>Auditives Reim-Memory (Level 3)</h3>
+                <p>Höre ein Zielwort und finde passende Reime.</p>
+                <div class="progress-bar"><div id="memory3-progress-fill" class="progress-fill"></div></div>
+                <button id="btn-memory3-start" class="btn btn-primary">Start</button>
+            </div>
+            <div id="sound-card" class="level-card" role="button" tabindex="0" aria-label="Geräusch erkennen öffnen">
+                <div class="level-header">
+                    <div class="level-icon">🔊</div>
+                    <div class="difficulty-badge difficulty-leicht">Spiel</div>
+                </div>
+                <h3>Geräusch erkennen</h3>
+                <p>Welches Geräusch hörst du? Wähle zuerst eine Kategorie aus und suche das richtige Bild zum passenden Geräusch</p>
+                <div class="progress-bar"><div id="sound-overview-progress" class="progress-fill"></div></div>
+                <button id="btn-sound-start" class="btn btn-primary">Start</button>
             </div>
             <div id="levels-grid" class="levels-grid"></div>
         </div>
@@ -97,11 +146,42 @@
                     <option value="2">Level 2</option>
                     <option value="3">Level 3</option>
                 </select>
-                <button id="btn-memory-play" class="btn btn-primary">▶️ Zielwort abspielen</button>
+                <button id="btn-memory-play" class="btn btn-success">🟢 Los</button>
                 <button id="btn-memory-reset" class="btn btn-secondary">🔄 Neue Runde</button>
             </div>
+            <div class="progress-bar"><div id="memory-progress-fill" class="progress-fill"></div></div>
             <div id="memory-status" class="info-box"><p>Gefundene Reime: 0/0</p></div>
             <div id="memory-grid" class="word-list"></div>
+        </div>
+    </div>
+    <div id="sound-screen" class="screen">
+        <div class="container">
+            <div class="header">
+                <div>
+                    <h2>Geräusch erkennen</h2>
+                    <p id="sound-info">Welches Geräusch hörst du? Wähle zuerst eine Kategorie aus und suche das richtige Bild zum passenden Geräusch</p>
+                </div>
+                <button id="btn-end-sound" class="btn btn-secondary">Zurück</button>
+            </div>
+            <div class="breadcrumb">Start → Übersicht → Geräusch erkennen</div>
+            <div class="progress-bar"><div id="sound-progress-fill" class="progress-fill"></div></div>
+            <div id="sound-category-grid" class="levels-grid"></div>
+        </div>
+    </div>
+    <div id="sound-detail-screen" class="screen">
+        <div class="container">
+            <div class="header">
+                <div>
+                    <h2 id="sound-detail-title"></h2>
+                    <p id="sound-detail-info">Suche das richtige Bild zum Geräusch</p>
+                </div>
+                <button id="btn-back-sound-detail" class="btn btn-secondary">Zurück</button>
+            </div>
+            <div class="breadcrumb">Start → Übersicht → Geräusch erkennen → Detail</div>
+            <div class="action-buttons">
+                <button id="btn-sound-play" class="btn btn-success">🟢 Geräusch abspielen</button>
+            </div>
+            <div id="sound-detail-grid" class="word-list"></div>
         </div>
     </div>
     <!-- Training Screen -->
