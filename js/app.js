@@ -243,7 +243,7 @@ function renderStoryGame() {
         openAiKey = openaiKeyInput.value || '';
         localStorage.setItem('openai_key', openAiKey);
     });
-  const seq = document.getElementById('story-sequence');
+    const seq = document.getElementById('story-sequence');
     if (seq) seq.innerHTML = '';
 }
 
@@ -470,7 +470,8 @@ function stopStory() {
     const list = document.getElementById('story-word-list');
     list.querySelectorAll('.word-card.correct').forEach(el => el.classList.remove('correct'));
 }
-    function appendSequenceImage(word) {
+
+function appendSequenceImage(word) {
     const container = document.getElementById('story-sequence');
     if (!container) return;
     const img = document.createElement('img');
@@ -508,7 +509,7 @@ function extractTargetsFromStory(text, dictionary) {
         }
     });
     return ordered;
-} 
+}
 function renderProfileCard() {
     const container = document.getElementById('profile-card');
     if (!container || !currentChild) return;
@@ -859,4 +860,5 @@ function handleRetry() {
 }
 
 console.log('📱 App-Code geladen');
+
 
