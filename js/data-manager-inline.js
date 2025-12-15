@@ -11,6 +11,7 @@ class DataManager {
         this.levelsData = null;
         this.usersData = null;
         this.currentChild = null;
+        this.CURRENT_VERSION = '1.1';
         this.init();
     }
 
@@ -203,30 +204,46 @@ this.usersData = {
     }
   ]
 };
-        // Lade gespeicherte Fortschritte aus localStorage
-        this.loadProgressFromStorage();
-
+        // Lade komplette Benutzerdaten aus localStorage (inkl. Profilfelder)
+        this.loadFromStorage();
+        
         console.log('✅ Daten inline geladen');
     }
-
-    loadProgressFromStorage() {
-        const stored = localStorage.getItem('sprachfoerderung_users');
-        if (stored) {
-            const storedData = JSON.parse(stored);
-            // Merge Fortschritte
-            storedData.children.forEach(storedChild => {
-                const child = this.usersData.children.find(c => c.id === storedChild.id);
-                if (child) {
-                    child.progress = storedChild.progress;
+   loadFromStorage() {
+        try {
+            const stored = localStorage.getItem('sprachfoerderung_users');
+            const storedVersion = localStorage.getItem('sprachfoerderung_version');
+            if (stored && storedVersion === this.CURRENT_VERSION) {
+                const storedData = JSON.parse(stored);
+                // Übernehme gesamte Benutzerdaten inkl. Name, Alter, Gruppe, Fortschritt
+                if (storedData && Array.isArray(storedData.children)) {
+                    this.usersData.children = storedData.children.map(ch => ({
+                        id: ch.id,
+                        name: ch.name,
+                        age: ch.age,
+                        avatar: ch.avatar,
+                        group: ch.group || '',
+                        progress: ch.progress || {
+                            level_1: { completed_sublevels: [] },
+                            level_2: { completed_sublevels: [] },
+                            level_3: { completed_sublevels: [] }
+                        }
+                    }));
+                    console.log('✅ Benutzerdaten aus localStorage geladen');
                 }
-            });
-            console.log('✅ Fortschritte aus localStorage geladen');
+            } else {
+                // Speichere die Default-Daten initial mit aktueller Version
+                this.saveUsers();
+            }
+        } catch (e) {
+            console.warn('⚠️ Konnte localStorage nicht lesen, verwende Default-Daten', e);
+   
         }
     }
 
     saveUsers() {
         localStorage.setItem('sprachfoerderung_users', JSON.stringify(this.usersData));
-        console.log('💾 Benutzer gespeichert');
+        localStorage.setItem('sprachfoerderung_version', this.CURRENT_VERSION);
     }
 
     getChildren() {
