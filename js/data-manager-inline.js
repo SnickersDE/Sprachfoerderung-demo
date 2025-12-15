@@ -79,42 +79,75 @@ class DataManager {
         };
 
         this.usersData = {
-            "children": [
-                {
-                    "id": "child_1",
-                    "name": "Anna",
-                    "age": 5,
-                    "avatar": "👧",
-                    "progress": {
-                        "level_1": {"completed_sublevels": []},
-                        "level_2": {"completed_sublevels": []},
-                        "level_3": {"completed_sublevels": []}
-                    }
-                },
-                {
-                    "id": "child_2",
-                    "name": "Max",
-                    "age": 6,
-                    "avatar": "👦",
-                    "progress": {
-                        "level_1": {"completed_sublevels": []},
-                        "level_2": {"completed_sublevels": []},
-                        "level_3": {"completed_sublevels": []}
-                    }
-                },
-                {
-                    "id": "child_3",
-                    "name": "Lena",
-                    "age": 5,
-                    "avatar": "👧",
-                    "progress": {
-                        "level_1": {"completed_sublevels": []},
-                        "level_2": {"completed_sublevels": []},
-                        "level_3": {"completed_sublevels": []}
-                    }
-                }
-            ]
-        };
+    "children": [
+        {
+            "id": "child_1",
+            "name": "Anna",
+            "age": 5,
+            "avatar": "👧",
+            "progress": {
+                "level_1": { "completed_sublevels": [] },
+                "level_2": { "completed_sublevels": [] },
+                "level_3": { "completed_sublevels": [] }
+            }
+        },
+        {
+            "id": "child_2",
+            "name": "Benni",
+            "age": 6,
+            "avatar": "👦",
+            "progress": {
+                "level_1": { "completed_sublevels": [] },
+                "level_2": { "completed_sublevels": [] },
+                "level_3": { "completed_sublevels": [] }
+            }
+        },
+        {
+            "id": "child_3",
+            "name": "Ayleen",
+            "age": 5,
+            "avatar": "👧",
+            "progress": {
+                "level_1": { "completed_sublevels": [] },
+                "level_2": { "completed_sublevels": [] },
+                "level_3": { "completed_sublevels": [] }
+            }
+        },
+        {
+            "id": "child_4",
+            "name": "Sebastian",
+            "age": 5,
+            "avatar": "👧",
+            "progress": {
+                "level_1": { "completed_sublevels": [] },
+                "level_2": { "completed_sublevels": [] },
+                "level_3": { "completed_sublevels": [] }
+            }
+        },
+        {
+            "id": "child_5",
+            "name": "Pia",
+            "age": 6,
+            "avatar": "👦",
+            "progress": {
+                "level_1": { "completed_sublevels": [] },
+                "level_2": { "completed_sublevels": [] },
+                "level_3": { "completed_sublevels": [] }
+            }
+        },
+        {
+            "id": "child_6",
+            "name": "Florian",
+            "age": 5,
+            "avatar": "👧",
+            "progress": {
+                "level_1": { "completed_sublevels": [] },
+                "level_2": { "completed_sublevels": [] },
+                "level_3": { "completed_sublevels": [] }
+            }
+        }
+    ]
+};
 
         // Lade gespeicherte Fortschritte aus localStorage
         this.loadProgressFromStorage();
