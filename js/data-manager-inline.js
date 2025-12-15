@@ -27,15 +27,15 @@ class DataManager {
                     "icon": "🌟",
                     "sublevels": [
                         {"id": "l1_s1", "reim_ideen": ["Haus", "Maus", "Laus"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
-                        {"id": "l1_s2", "reim_ideen": ["Bär", "mehr", "Heer"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
+                        {"id": "l1_s2", "reim_ideen": ["See", "Fee", "Tee"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s3", "reim_ideen": ["Boot", "rot", "Brot"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s4", "reim_ideen": ["Hase", "Nase", "Vase"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s5", "reim_ideen": ["Ball", "Fall", "Stall"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s6", "reim_ideen": ["Schuh", "Kuh", "Ruh"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s7", "reim_ideen": ["Baum", "Traum", "Raum"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
-                        {"id": "l1_s8", "reim_ideen": ["Fisch", "Tisch", "frisch"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
+                        {"id": "l1_s8", "reim_ideen": ["Hand", "Sand", "Rand"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s9", "reim_ideen": ["Hund", "Mund", "rund"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
-                        {"id": "l1_s10", "reim_ideen": ["Stern", "fern", "gern"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"}
+                        {"id": "l1_s10", "reim_ideen": ["Eis", "Heiß", "Kreis"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"}
                     ]
                 },
                 {
