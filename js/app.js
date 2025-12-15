@@ -1,4 +1,4 @@
- 
+
 
 // State
 let currentChild = null;
@@ -12,7 +12,8 @@ const screens = {
     login: document.getElementById('login-screen'),
     overview: document.getElementById('overview-screen'),
     training: document.getElementById('training-screen'),
-    story: document.getElementById('story-screen')
+    story: document.getElementById('story-screen'),
+    memory: document.getElementById('memory-screen')
 };
 
 // Initialisierung
@@ -113,28 +114,61 @@ function setupEventListeners() {
     if (storyStartBtn) {
         storyStartBtn.addEventListener('click', () => openStoryGame());
     }
+    const memoryCard = document.getElementById('memory-card');
+    if (memoryCard) {
+        memoryCard.addEventListener('click', () => openMemoryGame());
+        memoryCard.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openMemoryGame();
+            }
+        });
+    }
+    const memoryStartBtn = document.getElementById('btn-memory-start');
+    if (memoryStartBtn) memoryStartBtn.addEventListener('click', () => openMemoryGame());
     const endStoryBtn = document.getElementById('btn-end-story');
     if (endStoryBtn) {
         endStoryBtn.addEventListener('click', () => {
             showScreen('overview');
-            speechRecognition.onResult = (transcript, confidence) => {
-                handleSpeechResult(transcript, confidence);
-            };
-            document.getElementById('story-text').innerHTML = '';
+        });
+    }
+    const endMemoryBtn = document.getElementById('btn-end-memory');
+    if (endMemoryBtn) {
+        endMemoryBtn.addEventListener('click', () => {
+            showScreen('overview');
         });
     }
     const storyMic = document.getElementById('story-mic');
     if (storyMic) {
         storyMic.addEventListener('click', () => {
-            document.getElementById('story-recognition-status').textContent = '🎤 Sprich jetzt ein Wort...';
-            storyMic.classList.add('recording');
-            speechRecognition.start();
+            document.getElementById('story-recognition-status').textContent = 'Ich spreche langsam: Tippe ein Bild!';
+            try {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance('Tippe ein Bild, dann sage ich das Wort.');
+                utter.lang = 'de-DE';
+                const voice = pickKatjaVoice();
+                if (voice) utter.voice = voice;
+                utter.rate = 0.75;
+                utter.pitch = 1.0;
+                window.speechSynthesis.speak(utter);
+            } catch {}
         });
     }
-    const playBtn = document.getElementById('btn-story-play');
-    if (playBtn) playBtn.addEventListener('click', () => playStory());
-    const stopBtn = document.getElementById('btn-story-stop');
-    if (stopBtn) stopBtn.addEventListener('click', () => stopStory());
+    const nextBtn = document.getElementById('btn-next-level');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (currentVocabLevel < 3) {
+                currentVocabLevel += 1;
+                doneWords.clear();
+                activeTargetWord = null;
+                renderStoryGame();
+                document.getElementById('story-recognition-status').textContent = 'Neues Level! Tippe ein Bild.';
+            } else {
+                document.getElementById('story-recognition-status').textContent = 'Alle Levels geschafft! 🎉';
+                nextBtn.style.display = 'none';
+            }
+        });
+    }
 }
 
 // Screen Navigation
@@ -194,7 +228,14 @@ function selectChild(childId) {
 }
 
 let storySelected = [];
-const STORY_WORDS = ['Haus','Laus','Maus','Auto','Bauernhof','Giraffe','Spielzeug','Seil','Loch','Papa','Mama','Turm','Prinzessin','Ritter','Pferd','Einhorn','Drache'];
+const LEVEL_WORDS = {
+    1: ['Haus','Laus','Maus','Auto','Seil','Loch','Meer','Fuß','Tisch','Buch','Uhr','Stuhl','Turm','Pferd'],
+    2: ['Papa','Mama','Ritter','Schuhe','Hallo','Wolke','Lampe','Koffer','Tasche','Fenster','Spielzeug','Einhorn','Katze','Tatze'],
+    3: ['Krawatte','Computer','Weihnachtsmann','Pinguin','Elefant','Bauernhof','Prinzessin','Giraffe','Drache']
+};
+let currentVocabLevel = 1;
+let doneWords = new Set();
+let activeTargetWord = null;
 let openAiKey = localStorage.getItem('openai_key') || '';
 let readingActive = false;
 let readingShown = new Set();
@@ -206,10 +247,142 @@ function openStoryGame() {
     renderStoryGame();
 }
 
+// Reim-Memory
+let memoryLevel = 1;
+let memoryTarget = '';
+let memoryRhymeSet = [];
+let memoryFoundCount = 0;
+
+function openMemoryGame() {
+    showScreen('memory');
+    memoryLevel = 1;
+    renderMemoryGame();
+}
+
+function renderMemoryGame() {
+    const levelSelect = document.getElementById('memory-level');
+    if (levelSelect) {
+        levelSelect.value = String(memoryLevel);
+        levelSelect.onchange = () => {
+            memoryLevel = parseInt(levelSelect.value, 10) || 1;
+            buildMemoryRound();
+        };
+    }
+    const playBtn = document.getElementById('btn-memory-play');
+    if (playBtn) playBtn.onclick = () => playTargetAudio();
+    const resetBtn = document.getElementById('btn-memory-reset');
+    if (resetBtn) resetBtn.onclick = () => buildMemoryRound();
+    buildMemoryRound();
+}
+
+function getRhymeGroupsForLevel(memLevel) {
+    const levelIndex = memLevel - 1;
+    const levelData = dataManager.getLevel(levelIndex);
+    const groups = levelData.sublevels.map(s => s.reim_ideen);
+    return groups;
+}
+
+function buildMemoryRound() {
+    const grid = document.getElementById('memory-grid');
+    if (!grid) return;
+    const groups = getRhymeGroupsForLevel(memoryLevel);
+    const targetGroup = groups[Math.floor(Math.random() * groups.length)];
+    memoryTarget = targetGroup[Math.floor(Math.random() * targetGroup.length)];
+    memoryRhymeSet = targetGroup.slice();
+    memoryFoundCount = 0;
+    grid.innerHTML = '';
+    const allWords = [];
+    const rhymeCount = memoryLevel === 1 ? 2 : memoryLevel === 2 ? 3 : 4;
+    const distractorCount = memoryLevel === 1 ? 2 : memoryLevel === 2 ? 3 : 4;
+    const rhymeChoices = shuffle(memoryRhymeSet.filter(w => w !== memoryTarget)).slice(0, rhymeCount);
+    allWords.push(...rhymeChoices);
+    while (allWords.length < rhymeCount + distractorCount) {
+        const g = groups[Math.floor(Math.random() * groups.length)];
+        const w = g[Math.floor(Math.random() * g.length)];
+        if (!memoryRhymeSet.includes(w) && !allWords.includes(w)) allWords.push(w);
+    }
+    const cards = shuffle(allWords);
+    const levelData = dataManager.getLevel(memoryLevel - 1);
+    const folder = levelData.sublevels[0]?.bild_ordner || `level${memoryLevel}`;
+    cards.forEach((word, idx) => {
+        const card = document.createElement('div');
+        card.className = 'word-card';
+        card.dataset.word = word.toLowerCase();
+        const imgPath = `./images/${folder}/${word.toLowerCase()}.png`;
+        card.innerHTML = `
+            <div class="word-image-wrap">
+                <div class="placeholder">?</div>
+            </div>
+            <div class="word-label visually-hidden">${word}</div>
+        `;
+        card.addEventListener('click', () => handleMemoryCardClick(card, imgPath, word));
+        grid.appendChild(card);
+    });
+    updateMemoryStatus();
+    playTargetAudio();
+}
+
+function handleMemoryCardClick(card, imgPath, word) {
+    const wrap = card.querySelector('.word-image-wrap');
+    const label = card.querySelector('.word-label');
+    const img = new Image();
+    img.src = imgPath;
+    img.alt = word;
+    img.onerror = () => {
+        wrap.innerHTML = '';
+        const ph = document.createElement('div');
+        ph.className = 'placeholder';
+        ph.textContent = '?';
+        wrap.appendChild(ph);
+    };
+    img.onload = () => {
+        wrap.innerHTML = '';
+        wrap.appendChild(img);
+        label.classList.remove('visually-hidden');
+    };
+    speakWord(word);
+    const isRhyme = memoryRhymeSet.includes(word);
+    if (isRhyme) {
+        card.classList.add('correct');
+        memoryFoundCount++;
+        updateMemoryStatus();
+        const targetTotal = Math.min(memoryRhymeSet.length - 1, (memoryLevel === 1 ? 2 : memoryLevel === 2 ? 3 : 4));
+        if (memoryFoundCount >= targetTotal) {
+            document.getElementById('memory-info').textContent = 'Super! Runde geschafft!';
+        }
+    } else {
+        setTimeout(() => {
+            wrap.innerHTML = '<div class="placeholder">?</div>';
+            label.classList.add('visually-hidden');
+            card.classList.remove('correct');
+        }, 900);
+    }
+}
+
+function updateMemoryStatus() {
+    const total = (memoryLevel === 1 ? 2 : memoryLevel === 2 ? 3 : 4);
+    const box = document.getElementById('memory-status');
+    if (box) box.innerHTML = `<p>Gefundene Reime: ${memoryFoundCount}/${total} • Zielwort: ${memoryTarget}</p>`;
+}
+
+function playTargetAudio() {
+    if (!memoryTarget) return;
+    speakWord(memoryTarget);
+}
+
+function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
 function renderStoryGame() {
     const list = document.getElementById('story-word-list');
     list.innerHTML = '';
-    STORY_WORDS.forEach((word, idx) => {
+    const words = LEVEL_WORDS[currentVocabLevel] || [];
+    words.forEach((word, idx) => {
         const card = document.createElement('div');
         card.className = 'word-card';
         card.dataset.word = word.toLowerCase();
@@ -218,7 +391,7 @@ function renderStoryGame() {
             <div class="word-image-wrap">
                 <img src="${imgPath}" alt="${word}">
             </div>
-            <div class="word-label visually-hidden">${word}</div>
+            <div class="word-label">${word}</div>
         `;
         const imgEl = card.querySelector('img');
         imgEl.onerror = () => {
@@ -226,50 +399,45 @@ function renderStoryGame() {
             imgEl.style.display = 'block';
         };
         card.addEventListener('click', () => {
-            toggleStorySelection(word);
+            speakWord(word);
+            const lw = word.toLowerCase();
+            highlightStoryWord(lw, true);
+            activeTargetWord = lw;
+            document.getElementById('story-recognition-status').textContent = `Sprich: ${word}`;
+            speechRecognition.onResult = (transcript) => handleActiveWordResult(transcript);
+            speechRecognition.setReadingMode(false);
+            speechRecognition.start();
         });
         list.appendChild(card);
     });
-    speechRecognition.onResult = (transcript) => {
-        handleStorySpeechResult(transcript);
-    };
-    document.getElementById('story-recognition-status').textContent = 'Drücke auf das Mikrofon zum Starten';
+    document.getElementById('story-recognition-status').textContent = 'Tippe ein Bild, dann spreche ich das Wort';
     document.getElementById('story-mic').classList.remove('recording');
-    document.getElementById('story-text').innerHTML = '';
-    document.getElementById('story-info').textContent = 'Wähle oder sprich vier Wörter';
-    const openaiKeyInput = document.getElementById('openai-key');
-    openaiKeyInput.value = openAiKey;
-    openaiKeyInput.addEventListener('change', () => {
-        openAiKey = openaiKeyInput.value || '';
-        localStorage.setItem('openai_key', openAiKey);
-    });
-    const seq = document.getElementById('story-sequence');
-    if (seq) seq.innerHTML = '';
+    document.getElementById('story-info').textContent = `Level ${currentVocabLevel} – Tippe ein Bild und ich spreche das Wort`;
+    const nextBtn = document.getElementById('btn-next-level');
+    if (nextBtn) nextBtn.style.display = doneWords.size >= words.length && words.length ? 'inline-block' : 'none';
 }
 
-function toggleStorySelection(word) {
-    const w = word.toLowerCase();
-    const idx = storySelected.findIndex(x => x.toLowerCase() === w);
-    if (idx >= 0) {
-        storySelected.splice(idx, 1);
-        highlightStoryWord(w, false);
-    } else {
-        if (storySelected.length < 4) {
-            storySelected.push(word);
-            highlightStoryWord(w, true);
-            if (storySelected.length === 4) {
-                startStory();
-            }
-        }
+function speakWord(word) {
+    try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(word);
+        utter.lang = 'de-DE';
+        const voice = pickKatjaVoice();
+        if (voice) utter.voice = voice;
+        utter.rate = 0.75;
+        utter.pitch = 1.0;
+        window.speechSynthesis.speak(utter);
+    } catch (e) {
+        console.error('TTS Fehler:', e);
     }
-    document.getElementById('story-info').textContent = `Ausgewählt: ${storySelected.length}/4`;
 }
 
-function handleStorySpeechResult(transcript) {
-    document.getElementById('story-mic').classList.remove('recording');
-    const result = speechRecognition.validateRhyme(transcript, STORY_WORDS);
-    document.getElementById('story-recognition-status').innerHTML = `Gesprochen: "<strong>${transcript}</strong>"`;
-    if (result.matchedWord) toggleStorySelection(result.matchedWord);
+function pickKatjaVoice() {
+    const voices = window.speechSynthesis.getVoices() || [];
+    const matchKatja = voices.find(v => /katja/i.test(v.name));
+    if (matchKatja) return matchKatja;
+    const deVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+    return deVoices[0] || voices[0] || null;
 }
 
 function highlightStoryWord(word, active) {
@@ -280,6 +448,38 @@ function highlightStoryWord(word, active) {
             if (active) el.classList.add('correct'); else el.classList.remove('correct');
         }
     });
+}
+
+function markWordDone(word) {
+    const list = document.getElementById('story-word-list');
+    const card = Array.from(list.querySelectorAll('.word-card')).find(el => el.dataset.word === word);
+    if (!card) return;
+    const wrap = card.querySelector('.word-image-wrap');
+    if (wrap && !card.classList.contains('done')) {
+        const badge = document.createElement('div');
+        badge.className = 'done-badge';
+        badge.textContent = '✓';
+        wrap.appendChild(badge);
+        card.classList.add('done');
+        doneWords.add(word);
+        const words = LEVEL_WORDS[currentVocabLevel] || [];
+        const nextBtn = document.getElementById('btn-next-level');
+        if (nextBtn) nextBtn.style.display = doneWords.size >= words.length && words.length ? 'inline-block' : 'none';
+    }
+}
+
+function handleActiveWordResult(transcript) {
+    if (!activeTargetWord) return;
+    const res = speechRecognition.validateRhyme(transcript, [activeTargetWord]);
+    document.getElementById('story-recognition-status').innerHTML = `Gesprochen: "<strong>${transcript}</strong>"`;
+    if (res.matchedWord) {
+        markWordDone(activeTargetWord);
+        activeTargetWord = null;
+        document.getElementById('story-recognition-status').textContent = 'Super! Wähle das nächste Bild.';
+    } else {
+        document.getElementById('story-recognition-status').textContent = 'Fast! Versuch es nochmal.';
+        speechRecognition.start();
+    }
 }
 
 let currentStoryText = '';
@@ -682,7 +882,7 @@ function renderTrainingScreen() {
             <div class="word-image-wrap">
                 <img src="${imgPath}" alt="${word}">
             </div>
-            <div class="word-label visually-hidden">${word}</div>
+            <div class="word-label">${word}</div>
         `;
         const imgEl = wordCard.querySelector('img');
         imgEl.onload = () => { /* nothing */ };
@@ -699,7 +899,7 @@ function renderTrainingScreen() {
     
     // Reset UI
     document.getElementById('btn-record').style.display = speechRecognition.recognition ? 'inline-block' : 'none';
-    document.getElementById('btn-correct').style.display = 'inline-block';
+    document.getElementById('btn-correct').style.display = 'none';
     document.getElementById('btn-retry').style.display = 'inline-block';
     document.getElementById('word-image').innerHTML = '';
     document.getElementById('recognition-status').textContent = speechRecognition.recognition ? 'Drücke auf das Mikrofon zum Starten' : 'Spracherkennung ist optional. Nutze ✓ Richtig oder ✗ Nochmal.';
@@ -773,27 +973,49 @@ function drawStar(ctx, cx, cy, r, points) {
 }
 // Aufnahme starten
 function startRecording() {
-    document.getElementById('recognition-status').textContent = '🎤 Sprich jetzt ein Wort...';
-    document.querySelector('.mic-circle').classList.add('recording');
+    const statusEl = document.getElementById('recognition-status');
+    const mic = document.querySelector('.mic-circle');
+    if (statusEl) statusEl.textContent = '🎤 Aufnahme läuft – sprich die Wörter';
+    if (mic) mic.classList.add('recording');
+    trainingRecognized.clear();
+    trainingOrder = [];
+    speechRecognition.setReadingMode(true);
+    speechRecognition.configureThreshold(0.35, false);
+    speechRecognition.onResult = (transcript) => {
+        handleTrainingContinuousResult(transcript);
+    };
     speechRecognition.start();
 }
 
 // Speech Result Handler
 function handleSpeechResult(transcript, confidence) {
-    document.querySelector('.mic-circle').classList.remove('recording');
-    
-    console.log(`Kind sagte: "${transcript}"`);
-    
-    const result = speechRecognition.validateRhyme(
-        transcript,
-        currentSublevelData.reim_ideen
-    );
-    
-    document.getElementById('recognition-status').innerHTML = 
-        `Gesprochen: "<strong>${transcript}</strong>"`;
-    
-    highlightMatchedWord(result.matchedWord);
-    document.getElementById('word-image').innerHTML = '';
+    // Nicht mehr genutzt – Transkript wird nicht angezeigt
+}
+
+let trainingRecognized = new Set();
+let trainingOrder = [];
+
+function handleTrainingContinuousResult(transcript) {
+    const res = speechRecognition.validateRhyme(transcript, currentSublevelData.reim_ideen);
+    if (res.matchedWord && res.isCorrect) {
+        const w = res.matchedWord.toLowerCase();
+        if (!trainingRecognized.has(w)) {
+            trainingRecognized.add(w);
+            trainingOrder.push(w);
+            highlightMatchedWord(w);
+            const statusEl = document.getElementById('recognition-status');
+            if (statusEl) statusEl.textContent = `Erkannt: ${trainingRecognized.size}/${currentSublevelData.reim_ideen.length}`;
+        }
+        if (trainingRecognized.size >= currentSublevelData.reim_ideen.length) {
+            speechRecognition.stop();
+            const mic = document.querySelector('.mic-circle');
+            if (mic) mic.classList.remove('recording');
+            const statusEl = document.getElementById('recognition-status');
+            if (statusEl) statusEl.textContent = 'Alle Wörter erkannt! ✓';
+            const btnOk = document.getElementById('btn-correct');
+            if (btnOk) btnOk.style.display = 'inline-block';
+        }
+    }
 }
 
 // Speech Error Handler
@@ -860,5 +1082,5 @@ function handleRetry() {
 }
 
 console.log('📱 App-Code geladen');
-
+ 
 
