@@ -12,6 +12,19 @@ body {
     padding: 20px;
 }
 
+/* Vollbild-Hintergrundbild */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url('../images/landing-placeholder.jpg');
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    z-index: -1;
+    transform: translateZ(0);
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -58,6 +71,20 @@ h1 {
 h2 {
     font-size: 2rem;
     color: #333;
+}
+
+.rainbow-title {
+    font-size: 2.8rem;
+}
+#landing-screen .header {
+    justify-content: center;
+}
+#landing-screen h2 {
+    text-align: center;
+}
+#landing-screen p {
+    text-align: center;
+    font-size: 1.2rem;
 }
 
 .rainbow-title {
@@ -468,6 +495,7 @@ h2 {
     width: 180px;
     height: 180px;
     perspective: 900px;
+    touch-action: none;
 }
 .dice {
     width: 100%;
@@ -477,6 +505,7 @@ h2 {
     transition: transform 0.3s ease;
     user-select: none;
     cursor: grab;
+    touch-action: none;
 }
 .dice:active { cursor: grabbing; }
 .dice-face {
@@ -494,12 +523,12 @@ h2 {
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.15);
 }
-.face-front  { transform: translate(-50%, -50%) translateZ(75px); }
-.face-back   { transform: translate(-50%, -50%) rotateY(180deg) translateZ(75px); }
-.face-right  { transform: translate(-50%, -50%) rotateY(90deg) translateZ(75px); }
-.face-left   { transform: translate(-50%, -50%) rotateY(-90deg) translateZ(75px); }
-.face-top    { transform: translate(-50%, -50%) rotateX(90deg) translateZ(75px); }
-.face-bottom { transform: translate(-50%, -50%) rotateX(-90deg) translateZ(75px); }
+.face-front  { transform: translate(-50%, -50%) translateZ(75px);  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+.face-back   { transform: translate(-50%, -50%) rotateY(180deg) translateZ(75px); background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); }
+.face-right  { transform: translate(-50%, -50%) rotateY(90deg) translateZ(75px);  background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); }
+.face-left   { transform: translate(-50%, -50%) rotateY(-90deg) translateZ(75px); background: linear-gradient(135deg, #fddb92 0%, #d1fdff 100%); }
+.face-top    { transform: translate(-50%, -50%) rotateX(90deg) translateZ(75px);  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
+.face-bottom { transform: translate(-50%, -50%) rotateX(-90deg) translateZ(75px); background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
 
 .sound-action-buttons {
     display: flex;
@@ -511,6 +540,16 @@ h2 {
     flex: 1 1 160px;
     padding: 12px 18px;
 }
+
+/* Quadratische Spiel-Container */
+.levels-grid .level-card {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.levels-grid .level-card .progress-bar { margin-top: auto; }
+.levels-grid .level-card button { margin-top: 4px; width: 100%; }
 
 /* Action Buttons */
 .action-buttons {
