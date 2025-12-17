@@ -8,11 +8,19 @@
     <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
+    <div id="app-nav" style="max-width:1200px;margin:0 auto 15px auto;background:#fff;border-radius:20px;padding:15px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:800;font-size:1.2rem;color:#333;">Deine Sprachwerkstatt</div>
+        <div style="display:flex;gap:10px;">
+            <button id="btn-nav-kinder" class="btn btn-secondary">Kinder</button>
+            <button id="btn-nav-uebersicht" class="btn btn-primary">Spielübersicht</button>
+        </div>
+    </div>
     <!-- Login Screen -->
     <div id="login-screen" class="screen active">
         <div class="container">
-            <h1> Deine Sprachwerkstatt</h1>
-            <p class="subtitle"> Welches Kind spielt und lernt heute mit dir?</p>
+            <h1>🎯 Sprachförderung-Demo</h1>
+            <p class="subtitle">Wähle ein Kind aus</p>
+            <div class="breadcrumb">Start</div>
             <div id="children-list" class="children-grid"></div>
         </div>
     </div>
@@ -207,6 +215,7 @@
                     <div class="mic-circle">
                         <div id="mic-icon">🎤</div>
                     </div>
+                    <span id="recording-hint" class="status-text" style="display:none; margin-left: 10px;">Aufnahme an</span>
                     <p id="recognition-status" class="status-text" aria-live="polite">Drücke auf das Mikrofon zum Starten</p>
                 </div>
 
@@ -221,6 +230,9 @@
                     </button>
                     <button id="btn-retry" class="btn btn-error" style="display:none;">
                         ✗ Nochmal
+                    </button>
+                    <button id="btn-next-sublevel" class="btn btn-secondary">
+                        Weiter
                     </button>
                 </div>
 
@@ -237,3 +249,4 @@
     <script src="./js/app.js" defer></script>
 </body>
 </html>
+
