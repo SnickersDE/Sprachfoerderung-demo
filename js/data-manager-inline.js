@@ -33,7 +33,7 @@ class DataManager {
                         {"id": "l1_s5", "reim_ideen": ["Ball", "Fall", "Stall"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s6", "reim_ideen": ["Kind", "Wind", "Rind"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s7", "reim_ideen": ["Baum", "Traum", "Raum"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
-                        {"id": "l1_s8", "reim_ideen": ["Hand", "Sand", "Rand"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
+                        {"id": "l1_s8", "reim_ideen": ["Hand", "Sand", "Pfand"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s9", "reim_ideen": ["Hund", "Mund", "rund"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s10", "reim_ideen": ["Eis", "Heiß", "Kreis"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"}
                     ]
