@@ -350,16 +350,16 @@ h2 {
 
 /* Microphone Section */
 .microphone-section {
-    margin: 40px 0;
+    margin: 16px 0;
 }
 
 .mic-circle {
     display: inline-block;
     background: white;
     border-radius: 50%;
-    padding: 36px;
+    padding: 18px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    margin-bottom: 20px;
+    margin-bottom: 8px;
     transition: all 0.3s;
 }
 
@@ -378,7 +378,12 @@ h2 {
 }
 
 #mic-icon {
-    font-size: 3rem;
+    font-size: 2rem;
+}
+.recording-hint {
+    color: #856404;
+    font-size: 0.85rem;
+    margin-left: 8px;
 }
 
 .status-text {
