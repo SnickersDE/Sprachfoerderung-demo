@@ -27,11 +27,11 @@ class DataManager {
                     "icon": "🌟",
                     "sublevels": [
                         {"id": "l1_s1", "reim_ideen": ["Haus", "Maus", "Laus"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
-                        {"id": "l1_s2", "reim_ideen": ["See", "Fee", "Tee"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
+                        {"id": "l1_s2", "reim_ideen": ["Hund", "Mund", "Rund"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s3", "reim_ideen": ["Boot", "rot", "Brot"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s4", "reim_ideen": ["Hase", "Nase", "Vase"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s5", "reim_ideen": ["Ball", "Fall", "Stall"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
-                        {"id": "l1_s6", "reim_ideen": ["Schuh", "Kuh", "Ruh"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
+                        {"id": "l1_s6", "reim_ideen": ["Kind", "Wind", "Rind"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s7", "reim_ideen": ["Baum", "Traum", "Raum"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s8", "reim_ideen": ["Hand", "Sand", "Rand"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s9", "reim_ideen": ["Hund", "Mund", "rund"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
@@ -45,16 +45,16 @@ class DataManager {
                     "beschreibung": "Zweisilbige Wörter und komplexere Laute",
                     "icon": "⭐",
                     "sublevels": [
-                        {"id": "l2_s1", "reim_ideen": ["Katze", "Tatze", "Matze"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s2", "reim_ideen": ["Sonne", "Tonne", "Wonne"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s3", "reim_ideen": ["Blume", "Pflaume", "Räume"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s4", "reim_ideen": ["Fenster", "Gespenster", "Dienster"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s5", "reim_ideen": ["Krone", "Bohne", "Lohne"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s6", "reim_ideen": ["Wolke", "Scholle", "Rolle"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s7", "reim_ideen": ["Wiese", "Riese", "diese"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s1", "reim_ideen": ["Katze", "Tatze", "Matratze"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s2", "reim_ideen": ["Sonne", "Tonne", "Krone"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s3", "reim_ideen": ["Blume", "Pflaume", "Biene"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s4", "reim_ideen": ["Tisch", "Fisch", "Wisch"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s5", "reim_ideen": ["Hahn", "Bahn", "Kahn"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s6", "reim_ideen": ["Wolke", "Rolle", "Knolle"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s7", "reim_ideen": ["Wiese", "Riese", "Briese"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
                         {"id": "l2_s8", "reim_ideen": ["Kiste", "Liste", "Piste"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s9", "reim_ideen": ["Garten", "warten", "Karten"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s10", "reim_ideen": ["Kerze", "Herze", "Schmerze"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"}
+                        {"id": "l2_s9", "reim_ideen": ["Garten", "Karten", "Sparten"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s10", "reim_ideen": ["Kerze", "Scherze", "Herze"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"}
                     ]
                 },
                 {
@@ -64,21 +64,21 @@ class DataManager {
                     "beschreibung": "Dreisilbige Wörter und Konsonantencluster",
                     "icon": "🏆",
                     "sublevels": [
-                        {"id": "l3_s1", "reim_ideen": ["Schmetterling", "Wetterding", "Zetterkind"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s2", "reim_ideen": ["Elefant", "elegant", "relevant"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s1", "reim_ideen": ["Hase", "Vase", "Käse"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s2", "reim_ideen": ["Gepäck", "Speck", "Dreck"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
                         {"id": "l3_s3", "reim_ideen": ["Schokolade", "Marmelade", "Parade"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s4", "reim_ideen": ["Regenbogen", "Sonnenwogen", "Wellenhogen"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s5", "reim_ideen": ["Kaninchen", "Vanille", "Minichen"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s6", "reim_ideen": ["Glücklich", "Brücke", "Stücke"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s7", "reim_ideen": ["Bibliothek", "Diskothek", "Apothek"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s8", "reim_ideen": ["Geburtstag", "Feuertag", "Trauertag"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s9", "reim_ideen": ["Abenteuer", "Ungeheuer", "teuer"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
-                        {"id": "l3_s10", "reim_ideen": ["Weihnachten", "Sachen", "Drachen"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"}
+                        {"id": "l3_s4", "reim_ideen": ["Drache", "Wache", "Lache"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s5", "reim_ideen": ["Regenbogen", "Ellenbogen"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s6", "reim_ideen": ["Glücklich", "Pfirsich", "Teppich"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s7", "reim_ideen": ["Stadt", "Blatt", "Glatt"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s8", "reim_ideen": ["Spielzeug", "Werkzeug", "Flugzeug"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s9", "reim_ideen": ["Ritter", "Gewitter", "Glitter"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"},
+                        {"id": "l3_s10", "reim_ideen": ["Elegant", "Elefant", "Diamant"], "schwierigkeitsgrad": "schwer", "bild_ordner": "level3"}
                     ]
                 }
             ]
         };
-        
+
 this.usersData = {
   "children": [
     {
