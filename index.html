@@ -16,22 +16,34 @@
         </div>
     </div>
     <!-- Landing Screen -->
-    <div id="landing-screen" class="screen">
+    <div id="landing-screen" class="screen active">
         <div class="container">
             <div class="header">
                 <div>
-                    <h2>Deine Sprachwerkstatt</h2>
+                    <h2 class="rainbow-title">DEINE SPRACHWERKSTATT</h2>
                     <p>Willkommen! Drücke auf Fortsetzen, um die Kinder-Auswahl zu öffnen.</p>
                 </div>
             </div>
             <div class="breadcrumb">Start → Landing</div>
+            <div class="landing-hero">
+                <div class="dice-container">
+                    <div id="landing-dice" class="dice" aria-label="Spiele-Würfel">
+                        <div class="dice-face face-front">Wortschatz</div>
+                        <div class="dice-face face-right">Reime</div>
+                        <div class="dice-face face-back">Memory</div>
+                        <div class="dice-face face-left">Töne</div>
+                        <div class="dice-face face-top">Spiele</div>
+                        <div class="dice-face face-bottom">Start</div>
+                    </div>
+                </div>
+            </div>
             <div class="action-buttons">
                 <button id="btn-landing-continue" class="btn btn-primary">Fortsetzen</button>
             </div>
         </div>
     </div>
     <!-- Login Screen -->
-    <div id="login-screen" class="screen active">
+    <div id="login-screen" class="screen">
         <div class="container">
             <h1>🎯 Sprachförderung-Demo</h1>
             <p class="subtitle">Wähle ein Kind aus</p>
@@ -234,9 +246,7 @@
                 <div id="word-image" class="word-image-container"></div>
 
                 <div class="action-buttons">
-                    <button id="btn-record" class="btn btn-primary">
-                        🎤 Aufnehmen
-                    </button>
+                    <button id="btn-record" class="btn btn-primary btn-record">🎤</button>
                     <button id="btn-correct" class="btn btn-success" style="display:none;">
                         ✓ Richtig
                     </button>
