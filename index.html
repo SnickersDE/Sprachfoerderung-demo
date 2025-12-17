@@ -21,7 +21,7 @@
             <div class="header">
                 <div>
                     <h2 class="rainbow-title">DEINE SPRACHWERKSTATT</h2>
-                    <p>Willkommen! Drücke auf Fortsetzen, um die Kinder-Auswahl zu öffnen.</p>
+                    <p>Willkommen! Hast du Lust heute spielerisch neue Worte kennenzulernen?</p>
                 </div>
             </div>
             <div class="breadcrumb">Start → Landing</div>
@@ -38,7 +38,7 @@
                 </div>
             </div>
             <div class="action-buttons">
-                <button id="btn-landing-continue" class="btn btn-primary">Fortsetzen</button>
+                <button id="btn-landing-continue" class="btn btn-primary">Beginnen</button>
             </div>
         </div>
     </div>
@@ -97,32 +97,14 @@
                 <p>Erweitere den Wortschatz deines Kindes und lernt gemeinsam neue Wörter kennen.</p>
                 <button id="btn-vocab3-start" class="btn btn-primary">Start</button>
             </div>
-            <div id="memory1-card" class="level-card" role="button" tabindex="0" aria-label="Auditives Reim-Memory Level 1 öffnen">
+            <div id="memory1-card" class="level-card" role="button" tabindex="0" aria-label="Memory der Töne öffnen">
                 <div class="level-header">
                     <div class="level-icon">🧠</div>
                     <div class="difficulty-badge difficulty-leicht">Spiel</div>
                 </div>
-                <h3>Auditives Reim-Memory (Level 1)</h3>
-                <p>Höre ein Zielwort und finde passende Reime.</p>
+                <h3>Memory der Töne</h3>
+                <p>Finde Paare von Reim-Wörtern durch Hören und Merken.</p>
                 <button id="btn-memory1-start" class="btn btn-primary">Start</button>
-            </div>
-            <div id="memory2-card" class="level-card" role="button" tabindex="0" aria-label="Auditives Reim-Memory Level 2 öffnen">
-                <div class="level-header">
-                    <div class="level-icon">🧠</div>
-                    <div class="difficulty-badge difficulty-mittel">Spiel</div>
-                </div>
-                <h3>Auditives Reim-Memory (Level 2)</h3>
-                <p>Höre ein Zielwort und finde passende Reime.</p>
-                <button id="btn-memory2-start" class="btn btn-primary">Start</button>
-            </div>
-            <div id="memory3-card" class="level-card" role="button" tabindex="0" aria-label="Auditives Reim-Memory Level 3 öffnen">
-                <div class="level-header">
-                    <div class="level-icon">🧠</div>
-                    <div class="difficulty-badge difficulty-schwer">Spiel</div>
-                </div>
-                <h3>Auditives Reim-Memory (Level 3)</h3>
-                <p>Höre ein Zielwort und finde passende Reime.</p>
-                <button id="btn-memory3-start" class="btn btn-primary">Start</button>
             </div>
             <div id="sound-card" class="level-card" role="button" tabindex="0" aria-label="Geräusch erkennen öffnen">
                 <div class="level-header">
@@ -170,16 +152,8 @@
             </div>
             <div class="breadcrumb">Start → Übersicht → Reim-Memory</div>
             <div class="action-buttons">
-                <label for="memory-level" style="align-self:center;">Level</label>
-                <select id="memory-level" class="voice-select">
-                    <option value="1">Level 1</option>
-                    <option value="2">Level 2</option>
-                    <option value="3">Level 3</option>
-                </select>
-                <button id="btn-memory-play" class="btn btn-success">🟢 Los</button>
                 <button id="btn-memory-reset" class="btn btn-secondary">🔄 Neue Runde</button>
             </div>
-            <div id="memory-target" class="word-image-container"></div>
             <div class="progress-bar"><div id="memory-progress-fill" class="progress-fill"></div></div>
             <div id="memory-status" class="info-box"><p>Gefundene Reime: 0/0</p></div>
             <div id="memory-grid" class="word-list"></div>
@@ -253,7 +227,7 @@
                     <button id="btn-retry" class="btn btn-error" style="display:none;">
                         ✗ Nochmal
                     </button>
-                    <button id="btn-next-sublevel" class="btn btn-secondary">
+                    <button id="btn-next-sublevel" class="btn btn-success">
                         Weiter
                     </button>
                 </div>
