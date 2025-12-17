@@ -47,7 +47,7 @@ class DataManager {
                     "sublevels": [
                         {"id": "l2_s1", "reim_ideen": ["Katze", "Tatze", "Matratze"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
                         {"id": "l2_s2", "reim_ideen": ["Sonne", "Tonne", "Krone"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
-                        {"id": "l2_s3", "reim_ideen": ["Blume", "Pflaume", "Biene"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
+                        {"id": "l2_s3", "reim_ideen": ["Piraten", "Tomaten", "Heiraten"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
                         {"id": "l2_s4", "reim_ideen": ["Tisch", "Fisch", "Wisch"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
                         {"id": "l2_s5", "reim_ideen": ["Hahn", "Bahn", "Kahn"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
                         {"id": "l2_s6", "reim_ideen": ["Wolle", "Rolle", "Knolle"], "schwierigkeitsgrad": "mittel", "bild_ordner": "level2"},
