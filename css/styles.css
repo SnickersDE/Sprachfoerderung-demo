@@ -40,6 +40,19 @@ body::before {
     box-shadow: none;
 }
 #landing-screen .breadcrumb { display: none; }
+.title-image {
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+.nav-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
 
 .screen {
     display: none;
@@ -299,6 +312,12 @@ h2 {
 .training-content {
     text-align: center;
 }
+.training-content .action-buttons {
+    margin: 12px 0;
+}
+.training-content .word-list {
+    margin-bottom: 20px;
+}
 
 .instruction {
     display: none;
@@ -448,12 +467,12 @@ h2 {
     font-size: 2rem;
 }
 .btn-record {
-    min-width: 56px;
-    min-height: 56px;
+    min-width: 64px;
+    min-height: 64px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     padding: 0;
 }
 .recording-hint {
