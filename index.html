@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
-        <div id="app-nav" style="max-width:1200px;margin:0 auto 15px auto;background:#fff;border-radius:20px;padding:15px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;justify-content:space-between;align-items:center;">
-        <div id="btn-nav-title" class="nav-rainbow-title" style="cursor:pointer;">Deine Sprachwerkstatt</div>
+    <div id="app-nav" style="max-width:1200px;margin:0 auto 15px auto;background:#fff;border-radius:20px;padding:15px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;justify-content:space-between;align-items:center;">
+        <img id="btn-nav-logo" src="./images/logo-square.png" alt="Logo" class="nav-logo" style="cursor:pointer;">
         <div style="display:flex;gap:10px;">
             <button id="btn-nav-kinder" class="btn btn-secondary">Kinder</button>
             <button id="btn-nav-uebersicht" class="btn btn-primary">Spielübersicht</button>
@@ -19,9 +19,8 @@
     <div id="landing-screen" class="screen active">
         <div class="container">
             <div class="header">
-                <div>
-                    <h2 class="rainbow-title">DEINE SPRACHWERKSTATT</h2>
-                    <p>Willkommen! Hast du Lust heute spielerisch neue Worte kennenzulernen?</p>
+                <div style="width:100%;display:flex;justify-content:center;">
+                    <img id="landing-title-img" class="title-image" src="./images/title.png" alt="Deine Sprachwerkstatt">
                 </div>
             </div>
             <div class="breadcrumb"></div>
@@ -45,9 +44,9 @@
     <!-- Login Screen -->
     <div id="login-screen" class="screen">
         <div class="container">
-            <h1 class="rainbow-title">Deine Sprachwerkstatt</h1>
-            <p class="subtitle">Wer lernt heute mit dir spielerisch neue Wörter?</p>
-            <div class="breadcrumb">Start</div>
+            <div class="header" style="justify-content:center;">
+                <img id="login-title-img" class="title-image" src="./images/title.png" alt="Deine Sprachwerkstatt">
+            </div>
             <div id="children-list" class="children-grid"></div>
         </div>
     </div>
@@ -133,7 +132,7 @@
             <div class="header">
                 <div>
                     <h2>Wortschatz-Spiel</h2>
-                    <p id="story-info">Wähle ein Bild oder starte das kleine Quiz</p>
+                    <p id="story-info" style="text-align:center;">Wähle ein Bild oder starte das kleine Quiz</p>
                 </div>
                 <button id="btn-audio-toggle-story" class="btn btn-secondary">Audio aus</button>
                 <button id="btn-end-story" class="btn btn-secondary">Zurück</button>
@@ -141,8 +140,9 @@
             <div class="breadcrumb">Start → Übersicht → Wortschatz</div>
             <div id="story-word-list" class="word-list"></div>
             <div class="action-buttons">
-                <button id="btn-story-quiz-start" class="btn btn-success">Weiter</button>
-                <button id="btn-story-quiz-mic" class="btn btn-secondary btn-record" title="Sprich die Frage">🎤</button>
+                <button id="btn-story-quiz-back" class="btn btn-error" title="Zurück">⬅</button>
+                <button id="btn-story-quiz-start" class="btn btn-success">Beginne das Spiel</button>
+                <button id="btn-story-quiz-mic" class="btn btn-success" title="Frage vorlesen">❓</button>
                 <button id="btn-next-level" class="btn btn-primary" style="display:none;">Weiter</button>
             </div>
             <div class="progress-bar"><div id="story-quiz-progress" class="progress-fill"></div></div>
@@ -250,7 +250,7 @@
                 <div id="word-image" class="word-image-container"></div>
 
             <div class="action-buttons">
-                    <button id="btn-record" class="btn btn-primary btn-record">🎤 Drücke auf das Mikrofon zum Starten</button>
+                    <button id="btn-record" class="btn btn-primary btn-record">🎤 Starten</button>
                     <button id="btn-correct" class="btn btn-success" style="display:none;">
                         ✓ Richtig
                     </button>
