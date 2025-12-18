@@ -1,4 +1,4 @@
-
+ 
 
 // State
 let currentChild = null;
@@ -107,7 +107,7 @@ function setupEventListeners() {
     }
     const navKinder = document.getElementById('btn-nav-kinder');
     const navOverview = document.getElementById('btn-nav-uebersicht');
-    const navTitle = document.getElementById('btn-nav-title');
+    const navLogo = document.getElementById('btn-nav-logo');
     if (navKinder) {
         navKinder.addEventListener('click', () => {
             showScreen('login');
@@ -120,8 +120,8 @@ function setupEventListeners() {
             renderLevelsGrid();
         });
     }
-    if (navTitle) {
-        navTitle.addEventListener('click', () => {
+    if (navLogo) {
+        navLogo.addEventListener('click', () => {
             showScreen('landing');
         });
     }
@@ -603,6 +603,7 @@ function renderStoryGame() {
     const quizStart = document.getElementById('btn-story-quiz-start');
     if (quizStart) {
         quizStart.onclick = () => nextStoryQuizStep();
+        quizStart.textContent = 'Beginne das Spiel';
     }
     const quizMic = document.getElementById('btn-story-quiz-mic');
     if (quizMic) {
@@ -611,6 +612,10 @@ function renderStoryGame() {
                 speakWord(`Zeig mir ${currentQuizTarget}`);
             }
         };
+    }
+    const quizBack = document.getElementById('btn-story-quiz-back');
+    if (quizBack) {
+        quizBack.onclick = () => prevStoryQuizStep();
     }
 }
 
@@ -878,7 +883,7 @@ function runStoryQuizStep() {
     }
     const pool = shuffle(all).slice(0, 4);
     currentQuizTarget = pool[0];
-    document.getElementById('story-info').textContent = `Zeig mir ${currentQuizTarget}`;
+    document.getElementById('story-info').textContent = `Zeig mir: ${currentQuizTarget}?`;
     const progressFill = document.getElementById('story-quiz-progress');
     if (progressFill) progressFill.style.width = `${Math.round((storyQuizRound/5)*100)}%`;
     renderQuizOptions(currentQuizTarget, pool);
@@ -905,6 +910,7 @@ function renderQuizOptions(target, options) {
             imgEl.style.display = 'block';
         };
         card.addEventListener('click', () => {
+            speakWord(word);
             const correct = word === target;
             const nextBtn = document.getElementById('btn-story-quiz-start');
             if (correct) {
@@ -914,7 +920,7 @@ function renderQuizOptions(target, options) {
                 badge.className = 'done-badge';
                 badge.textContent = '✓';
                 wrap.appendChild(badge);
-                if (nextBtn) nextBtn.disabled = false;
+                if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = 'nächstes level'; }
             } else {
                 card.classList.remove('correct');
                 card.classList.add('active');
@@ -932,6 +938,11 @@ function nextStoryQuizStep() {
         return;
     }
     storyQuizRound++;
+    runStoryQuizStep();
+}
+function prevStoryQuizStep() {
+    if (!storyQuizActive) return;
+    storyQuizRound = Math.max(0, storyQuizRound - 1);
     runStoryQuizStep();
 }
 
