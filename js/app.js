@@ -155,11 +155,11 @@ function setupEventListeners() {
     
     const storyCard = document.getElementById('story-card');
     if (storyCard) {
-        storyCard.addEventListener('click', () => openStoryGame());
+        storyCard.addEventListener('click', () => { currentVocabLevel = 1; openStoryGame(); });
         storyCard.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                openStoryGame();
+                currentVocabLevel = 1; openStoryGame();
             }
         });
     }
@@ -602,7 +602,15 @@ function renderStoryGame() {
     }
     const quizStart = document.getElementById('btn-story-quiz-start');
     if (quizStart) {
-        quizStart.onclick = () => startStoryQuiz();
+        quizStart.onclick = () => nextStoryQuizStep();
+    }
+    const quizMic = document.getElementById('btn-story-quiz-mic');
+    if (quizMic) {
+        quizMic.onclick = () => {
+            if (storyQuizActive && currentQuizTarget) {
+                speakWord(`Zeig mir ${currentQuizTarget}`);
+            }
+        };
     }
 }
 
@@ -812,8 +820,8 @@ function speakWord(word) {
         utter.lang = 'de-DE';
         const voice = pickKatjaVoice();
         if (voice) utter.voice = voice;
-        utter.rate = 0.75;
-        utter.pitch = 1.0;
+        utter.rate = 0.9;
+        utter.pitch = 1.1;
         if (audioEnabled) window.speechSynthesis.speak(utter);
     } catch (e) {
         console.error('TTS Fehler:', e);
@@ -822,8 +830,18 @@ function speakWord(word) {
 
 function pickKatjaVoice() {
     const voices = window.speechSynthesis.getVoices() || [];
-    const matchKatja = voices.find(v => /katja/i.test(v.name));
-    if (matchKatja) return matchKatja;
+    const preferredNames = [
+        /google.*deutsch/i,
+        /microsoft.*hedda/i,
+        /katja/i,
+        /anna/i,
+        /vicki/i,
+        /sara/i
+    ];
+    for (const re of preferredNames) {
+        const found = voices.find(v => re.test(v.name));
+        if (found) return found;
+    }
     const deVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
     return deVoices[0] || voices[0] || null;
 }
@@ -841,6 +859,7 @@ function highlightStoryWord(word, active) {
 // Wortschatz-Quiz mit 3 Unterleveln („Zeig mir X“)
 let storyQuizActive = false;
 let storyQuizRound = 0;
+let currentQuizTarget = '';
 function startStoryQuiz() {
     storyQuizActive = true;
     storyQuizRound = 0;
@@ -858,9 +877,11 @@ function runStoryQuizStep() {
         return;
     }
     const pool = shuffle(all).slice(0, 4);
-    const target = pool[0];
-    document.getElementById('story-info').textContent = `Zeig mir ${target}`;
-    renderQuizOptions(target, pool);
+    currentQuizTarget = pool[0];
+    document.getElementById('story-info').textContent = `Zeig mir ${currentQuizTarget}`;
+    const progressFill = document.getElementById('story-quiz-progress');
+    if (progressFill) progressFill.style.width = `${Math.round((storyQuizRound/5)*100)}%`;
+    renderQuizOptions(currentQuizTarget, pool);
 }
 function renderQuizOptions(target, options) {
     const list = document.getElementById('story-word-list');
@@ -885,6 +906,7 @@ function renderQuizOptions(target, options) {
         };
         card.addEventListener('click', () => {
             const correct = word === target;
+            const nextBtn = document.getElementById('btn-story-quiz-start');
             if (correct) {
                 card.classList.add('correct');
                 const wrap = card.querySelector('.word-image-wrap');
@@ -892,10 +914,7 @@ function renderQuizOptions(target, options) {
                 badge.className = 'done-badge';
                 badge.textContent = '✓';
                 wrap.appendChild(badge);
-                setTimeout(() => {
-                    storyQuizRound++;
-                    runStoryQuizStep();
-                }, 700);
+                if (nextBtn) nextBtn.disabled = false;
             } else {
                 card.classList.remove('correct');
                 card.classList.add('active');
@@ -904,6 +923,16 @@ function renderQuizOptions(target, options) {
         });
         list.appendChild(card);
     });
+    const nextBtn = document.getElementById('btn-story-quiz-start');
+    if (nextBtn) nextBtn.disabled = true;
+}
+function nextStoryQuizStep() {
+    if (!storyQuizActive) {
+        startStoryQuiz();
+        return;
+    }
+    storyQuizRound++;
+    runStoryQuizStep();
 }
 
 const VIDEO_LEVELS = [
