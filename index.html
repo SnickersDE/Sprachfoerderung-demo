@@ -115,6 +115,15 @@
                 <p>Welchen Ton hörst du? Wähle eine Kategorie und finde das passende Bild.</p>
                 <button id="btn-sound-start" class="btn btn-primary">Start</button>
             </div>
+            <div id="video-card" class="level-card" role="button" tabindex="0" aria-label="Erkenne im Video öffnen">
+                <div class="level-header">
+                    <div class="level-icon">🎬</div>
+                    <div class="difficulty-badge difficulty-mittel">Spiel</div>
+                </div>
+                <h3>Erkenne im Video</h3>
+                <p>Sieh dir ein kurzes Video an und wähle, was du gesehen hast.</p>
+                <button id="btn-video-start" class="btn btn-primary">Start</button>
+            </div>
             <div id="levels-grid" class="levels-grid"></div>
         </div>
     </div>
@@ -135,6 +144,27 @@
                 <button id="btn-story-quiz-start" class="btn btn-success">Beginnen</button>
                 <button id="btn-next-level" class="btn btn-primary" style="display:none;">Weiter</button>
             </div>
+        </div>
+    </div>
+    <div id="video-screen" class="screen">
+        <div class="container">
+            <div class="header">
+                <div>
+                    <h2>Erkenne im Video</h2>
+                    <p id="video-info">Klicke auf das Video, schaue es an und starte dann das Quiz</p>
+                </div>
+                <button id="btn-audio-toggle-video" class="btn btn-secondary">Audio aus</button>
+                <button id="btn-end-video" class="btn btn-secondary">Zurück</button>
+            </div>
+            <div class="breadcrumb">Start → Übersicht → Erkenne im Video</div>
+            <div class="word-image-wrap" style="height:320px;">
+                <video id="video-player" style="width:100%;height:100%;object-fit:cover;" controls></video>
+            </div>
+            <div class="action-buttons">
+                <button id="btn-video-quiz-start" class="btn btn-success">Beginnen</button>
+                <button id="btn-video-next" class="btn btn-primary">Weiter</button>
+            </div>
+            <div id="video-card-grid" class="word-list"></div>
         </div>
     </div>
     <div id="memory-screen" class="screen">
