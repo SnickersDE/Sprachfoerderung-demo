@@ -703,6 +703,159 @@ h2 {
     outline: none;
 }
 
+.videostory-stage {
+    position: relative;
+    height: 70vh;
+    min-height: 360px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0b1020;
+    transform: translateZ(0);
+}
+
+body[data-screen="videostory"],
+body[data-screen="videostory"] * {
+    cursor: url('../images/flamme.ani'), auto !important;
+}
+
+.videostory-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(1);
+    transition: opacity 520ms ease, transform 520ms ease;
+    will-change: opacity, transform;
+}
+
+.videostory-video.is-active {
+    opacity: 1;
+}
+
+.videostory-video.is-incoming {
+    opacity: 1;
+    transform: scale(1.03);
+}
+
+.videostory-video.is-outgoing {
+    opacity: 0;
+    transform: scale(1.01);
+}
+
+.videostory-dim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    transition: opacity 520ms ease;
+    pointer-events: none;
+}
+
+.videostory-stage.is-transitioning .videostory-dim {
+    opacity: 1;
+}
+
+.videostory-next-btn {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    padding: 12px 18px;
+    border-radius: 14px;
+    border: 2px solid rgba(56, 239, 125, 0.55);
+    background: rgba(17, 153, 142, 0.16);
+    color: #eafff0;
+    font-weight: 800;
+    letter-spacing: 0.02rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: transform 220ms ease, filter 220ms ease, background 220ms ease, border-color 220ms ease;
+}
+
+.videostory-next-btn:focus {
+    outline: none;
+    filter: brightness(0.98);
+}
+
+.videostory-next-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(17, 153, 142, 0.2);
+    border-color: rgba(56, 239, 125, 0.7);
+}
+
+.videostory-next-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.videostory-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    pointer-events: none;
+}
+
+.videostory-loading-card {
+    width: min(520px, 92%);
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: 18px;
+    padding: 18px 18px 16px 18px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.22);
+}
+
+body[data-theme="dark"] .videostory-loading-card {
+    background: rgba(12, 18, 33, 0.86);
+}
+
+.videostory-loading-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 10px;
+}
+
+body[data-theme="dark"] .videostory-loading-title {
+    color: #f2f4fa;
+}
+
+.videostory-loading-bar {
+    width: 100%;
+    height: 14px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+body[data-theme="dark"] .videostory-loading-bar {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.videostory-loading-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, rgba(17, 153, 142, 0.95), rgba(56, 239, 125, 0.95));
+    transition: width 260ms ease;
+}
+
+.videostory-loading-text {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: #333;
+    text-align: right;
+}
+
+body[data-theme="dark"] .videostory-loading-text {
+    color: #e7eaf2;
+}
+
 #sentence-options.word-list .word-card.selected {
     outline: 5px solid #38ef7d;
     box-shadow: 0 0 0 6px rgba(56,239,125,0.25);
@@ -1165,6 +1318,17 @@ h2 {
     margin: 30px 0;
 }
 
+#login-screen .info-box .action-buttons {
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+#login-screen .info-box .action-buttons .profile-input,
+#login-screen .info-box .action-buttons .voice-select,
+#login-screen .info-box .action-buttons .btn {
+    width: auto;
+}
+
 .symbol-buttons {
     display: flex;
     justify-content: center;
@@ -1377,7 +1541,7 @@ h2 {
     }
 
     .children-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
     }
 
@@ -1392,15 +1556,17 @@ h2 {
     }
 
     .child-card h3 {
-        font-size: clamp(0.78rem, 3.2vw, 0.95rem);
-        line-height: 1.1;
+        font-size: clamp(0.72rem, 2.8vw, 0.9rem);
+        line-height: 1.15;
         margin: 0 0 2px 0;
         max-width: 100%;
         overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow-wrap: anywhere;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        display: block;
+        overflow-wrap: normal;
+        word-break: keep-all;
+        hyphens: none;
     }
 
     .child-card p {
@@ -1418,6 +1584,42 @@ h2 {
     
     .btn {
         width: 100%;
+    }
+
+    #login-screen .info-box {
+        padding: 14px;
+    }
+
+    #login-screen .info-box .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        justify-content: stretch;
+        align-items: stretch !important;
+        margin: 0;
+    }
+
+    #login-screen #add-child-name {
+        grid-column: 1 / -1;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    #login-screen #add-child-age {
+        grid-column: 1 / 2;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    #login-screen #add-child-avatar {
+        grid-column: 2 / 3;
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+
+    #login-screen #btn-add-child {
+        grid-column: 1 / -1;
+        width: 100% !important;
     }
 
     #story-word-list.word-list {
@@ -1498,7 +1700,28 @@ h2 {
     #sentence-options.word-list .word-image-wrap {
         height: clamp(92px, 18vw, 150px);
     }
-}
+
+    #training-screen .action-buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 8px 0;
+    }
+
+    #training-screen .action-buttons .btn {
+        width: auto;
+        flex: 1 1 140px;
+        padding: 12px 18px;
+        border-radius: 14px;
+    }
+
+    #training-screen .action-buttons .btn-record {
+        flex: 0 0 auto;
+        padding: 0;
+        border-radius: 15px;
+        min-width: 64px;
+        min-height: 64px;
+    }
 
     #app-nav {
         display: grid !important;
