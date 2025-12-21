@@ -30,7 +30,10 @@
         <div class="container">
             <div class="header">
                 <div style="width:100%;display:flex;justify-content:center;">
-                    <img id="landing-title-img" class="title-image" src="./images/title.png" alt="Deine Sprachwerkstatt" data-fallback="Deine Sprachwerkstatt">
+                    <div class="landing-title-wrap">
+                        <img id="landing-title-img" class="title-image" src="./images/title.png" alt="Deine Sprachwerkstatt" data-fallback="Deine Sprachwerkstatt">
+                        <video id="landing-title-video" aria-hidden="true" muted playsinline preload="auto" disablepictureinpicture></video>
+                    </div>
                 </div>
             </div>
             <div class="breadcrumb"></div>
@@ -124,7 +127,7 @@
                     <div class="level-icon">🔊</div>
                     <div class="difficulty-badge difficulty-leicht">Spiel</div>
                 </div>
-                <h3>Töne kennenlernen</h3>
+                <h3>Geräusche erkennen</h3>
                 <p>Welchen Ton hörst du? Wähle eine Kategorie und finde das passende Bild.</p>
                 <button id="btn-sound-start" class="btn btn-primary">Start</button>
             </div>
@@ -237,6 +240,9 @@
                 </div>
             </div>
             <div class="breadcrumb">Start → Übersicht → Videostory</div>
+            <div class="action-buttons" style="margin:12px 0 16px 0;">
+                <select id="videostory-scene-select" class="voice-select" aria-label="Szene auswählen" style="width:100%;max-width:420px;margin-right:0;"></select>
+            </div>
             <div id="videostory-stage" class="videostory-stage" aria-label="Videostory Bühne">
                 <video id="videostory-video-a" class="videostory-video" autoplay loop muted playsinline preload="auto"></video>
                 <video id="videostory-video-b" class="videostory-video" autoplay loop muted playsinline preload="auto"></video>
