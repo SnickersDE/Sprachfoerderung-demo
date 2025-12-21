@@ -32,7 +32,7 @@ class DataManager {
                         {"id": "l1_s4", "reim_ideen": ["Hase", "Nase", "Vase"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s5", "reim_ideen": ["Ball", "Fall", "Stall"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s6", "reim_ideen": ["Kind", "Wind", "Rind"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
-                        {"id": "l1_s7", "reim_ideen": ["Baum", "Traum", "Zaun"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
+                        {"id": "l1_s7", "reim_ideen": ["Baum", "Traum", "Raum"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s8", "reim_ideen": ["Hand", "Sand", "Pfand"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s9", "reim_ideen": ["Hund", "Mund", "rund"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"},
                         {"id": "l1_s10", "reim_ideen": ["Eis", "Heiß", "Kreis"], "schwierigkeitsgrad": "leicht", "bild_ordner": "level1"}
@@ -79,137 +79,84 @@ class DataManager {
             ]
         };
 
-this.usersData = {
-  "children": [
-    {
-      "id": "child_1",
-      "name": "Anna",
-      "age": 5,
-      "avatar": "👧",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_2",
-      "name": "Benni",
-      "age": 6,
-      "avatar": "👦",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_3",
-      "name": "Ayleen",
-      "age": 5,
-      "avatar": "👧",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_4",
-      "name": "Sebastian",
-      "age": 5,
-      "avatar": "👦",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_5",
-      "name": "Pia",
-      "age": 6,
-      "avatar": "👧",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_6",
-      "name": "Florian",
-      "age": 3,
-      "avatar": "👦",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_7",
-      "name": "Anja",
-      "age": 4,
-      "avatar": "👧",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_8",
-      "name": "Tobias",
-      "age": 5,
-      "avatar": "👦",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_9",
-      "name": "Pedro",
-      "age": 5,
-      "avatar": "👦",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_10",
-      "name": "Luis",
-      "age": 6,
-      "avatar": "👦",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    },
-    {
-      "id": "child_11",
-      "name": "Marie",
-      "age": 3,
-      "avatar": "👧",
-      "progress": {
-        "level_1": { "completed_sublevels": [] },
-        "level_2": { "completed_sublevels": [] },
-        "level_3": { "completed_sublevels": [] }
-      }
-    }
-  ]
-};
+        this.usersData = {
+            children: [
+                {
+                    id: "child_1",
+                    name: "Anna",
+                    age: 5,
+                    avatar: "👧",
+                    progress: {
+                        level_1: { completed_sublevels: [] },
+                        level_2: { completed_sublevels: [] },
+                        level_3: { completed_sublevels: [] }
+                    }
+                },
+                {
+                    id: "child_2",
+                    name: "Benni",
+                    age: 6,
+                    avatar: "👦",
+                    progress: {
+                        level_1: { completed_sublevels: [] },
+                        level_2: { completed_sublevels: [] },
+                        level_3: { completed_sublevels: [] }
+                    }
+                },
+                {
+                    id: "child_3",
+                    name: "Ayleen",
+                    age: 5,
+                    avatar: "👧",
+                    progress: {
+                        level_1: { completed_sublevels: [] },
+                        level_2: { completed_sublevels: [] },
+                        level_3: { completed_sublevels: [] }
+                    }
+                },
+                {
+                    id: "child_4",
+                    name: "Sebastian",
+                    age: 5,
+                    avatar: "👧",
+                    progress: {
+                        level_1: { completed_sublevels: [] },
+                        level_2: { completed_sublevels: [] },
+                        level_3: { completed_sublevels: [] }
+                    }
+                },
+                {
+                    id: "child_5",
+                    name: "Pia",
+                    age: 6,
+                    avatar: "👦",
+                    progress: {
+                        level_1: { completed_sublevels: [] },
+                        level_2: { completed_sublevels: [] },
+                        level_3: { completed_sublevels: [] }
+                    }
+                },
+                {
+                    id: "child_6",
+                    name: "Florian",
+                    age: 5,
+                    avatar: "👧",
+                    progress: {
+                        level_1: { completed_sublevels: [] },
+                        level_2: { completed_sublevels: [] },
+                        level_3: { completed_sublevels: [] }
+                    }
+                }
+            ]
+        };
+
         // Lade komplette Benutzerdaten aus localStorage (inkl. Profilfelder)
         this.loadFromStorage();
-        
+
         console.log('✅ Daten inline geladen');
     }
-   loadFromStorage() {
+
+    loadFromStorage() {
         try {
             const stored = localStorage.getItem('sprachfoerderung_users');
             const storedVersion = localStorage.getItem('sprachfoerderung_version');
@@ -237,7 +184,6 @@ this.usersData = {
             }
         } catch (e) {
             console.warn('⚠️ Konnte localStorage nicht lesen, verwende Default-Daten', e);
-   
         }
     }
 
@@ -248,6 +194,22 @@ this.usersData = {
 
     getChildren() {
         return this.usersData?.children || [];
+    }
+
+    addChild({ name, age, avatar }) {
+        const safeName = String(name || '').trim();
+        const safeAge = Math.max(1, Math.min(18, parseInt(age, 10) || 0));
+        const safeAvatar = String(avatar || '👤').trim() || '👤';
+        if (!safeName || !safeAge) return null;
+        const id = `child_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        const progress = {};
+        (this.getLevels() || []).forEach(lvl => {
+            progress[lvl.id] = { completed_sublevels: [] };
+        });
+        const child = { id, name: safeName, age: safeAge, avatar: safeAvatar, progress, group: '' };
+        this.usersData.children.push(child);
+        this.saveUsers();
+        return child;
     }
 
     setCurrentChild(childId) {
@@ -277,8 +239,10 @@ this.usersData = {
                 child.progress[levelId].completed_sublevels.push(sublevelId);
                 this.saveUsers();
                 console.log(`✅ Sublevel ${sublevelId} abgeschlossen für ${child.name}`);
+                return true;
             }
         }
+        return false;
     }
 
     calculateProgress(childId, levelId) {
