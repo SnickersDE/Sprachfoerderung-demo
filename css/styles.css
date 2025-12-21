@@ -1236,8 +1236,15 @@ h2 {
     }
 
     .child-card h3 {
-        font-size: 0.95rem;
+    font-size: clamp(0.78rem, 3.2vw, 0.95rem);
+        line-height: 1.1;
         margin: 0 0 2px 0;
+        max-width: 100%;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow-wrap: anywhere;
     }
 
     .child-card p {
@@ -1405,3 +1412,4 @@ h2 {
         text-align: left;
     }
 }
+
