@@ -937,7 +937,7 @@ function setupEventListeners() {
     }
     const landingExperts = document.getElementById('btn-landing-experts');
     if (landingExperts) {
-            landingExperts.addEventListener('click', async () => {
+        landingExperts.addEventListener('click', async () => {
             disableLandingLogoTransitionOnce = true;
             stopLandingTitleVideo();
             const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
@@ -2504,8 +2504,16 @@ const VIDEOSTORY_LIBRARY = {
         title: 'Videostory',
         startSceneId: 'scene1',
         scenes: [
-            { id: 'scene1', videoSrc: './video/videostory/video1.mp4', nextSceneId: 'scene2' },
-            { id: 'scene2', videoSrc: './video/videostory/video2.mp4', nextSceneId: 'scene3' },
+            {
+                id: 'scene1',
+                videoSrc: './video/videostory/video1.mp4',
+                nextSceneId: null,
+                choices: [
+                    { id: 'wind', label: 'Wind', icon: '💨', narration: 'Wind!', nextSceneId: 'scene2' },
+                    { id: 'pilz', label: 'Pilz', icon: '🍄', narration: 'Pilz!', nextSceneId: 'scene3' }
+                ]
+            },
+            { id: 'scene2', videoSrc: './video/videostory/video2.mp4', nextSceneId: null },
             { id: 'scene3', videoSrc: './video/videostory/video3.mp4', nextSceneId: null }
         ]
     }
@@ -2539,6 +2547,9 @@ function createVideoStoryRuntime() {
         stage: document.getElementById('videostory-stage'),
         videoA: document.getElementById('videostory-video-a'),
         videoB: document.getElementById('videostory-video-b'),
+        choicesWrap: document.getElementById('videostory-choices'),
+        choiceWindBtn: document.getElementById('btn-videostory-choice-wind'),
+        choicePilzBtn: document.getElementById('btn-videostory-choice-pilz'),
         nextBtn: document.getElementById('btn-videostory-next'),
         sceneSelect: document.getElementById('videostory-scene-select'),
         dim: document.getElementById('videostory-dim'),
@@ -2668,8 +2679,73 @@ function createVideoStoryRuntime() {
         const { nextBtn, sceneSelect } = els();
         if (sceneSelect) sceneSelect.value = scene?.id || '';
         if (!nextBtn) return;
+        const hasChoices = Array.isArray(scene?.choices) && scene.choices.length > 0;
+        nextBtn.style.display = hasChoices ? 'none' : 'inline-block';
         nextBtn.disabled = false;
         nextBtn.textContent = scene?.nextSceneId ? 'Weiter' : 'Fertig';
+    };
+
+    const getChoiceById = (scene, id) => {
+        const choices = Array.isArray(scene?.choices) ? scene.choices : [];
+        return choices.find(c => c?.id === id) || null;
+    };
+
+    const setChoicesForScene = (scene) => {
+        const { choicesWrap, choiceWindBtn, choicePilzBtn } = els();
+        if (!choicesWrap) return;
+        const choices = Array.isArray(scene?.choices) ? scene.choices : [];
+        const hasChoices = choices.length > 0;
+        choicesWrap.style.display = hasChoices ? 'flex' : 'none';
+
+        const wind = getChoiceById(scene, 'wind');
+        const pilz = getChoiceById(scene, 'pilz');
+
+        if (choiceWindBtn) {
+            const ok = !!wind;
+            choiceWindBtn.style.display = ok ? 'inline-flex' : 'none';
+            choiceWindBtn.disabled = !ok;
+            choiceWindBtn.setAttribute('aria-label', ok ? `${wind.label} wählen` : 'Option wählen');
+            const icon = choiceWindBtn.querySelector('.videostory-choice-icon');
+            if (icon) icon.textContent = ok ? (wind.icon || '💨') : '💨';
+        }
+
+        if (choicePilzBtn) {
+            const ok = !!pilz;
+            choicePilzBtn.style.display = ok ? 'inline-flex' : 'none';
+            choicePilzBtn.disabled = !ok;
+            choicePilzBtn.setAttribute('aria-label', ok ? `${pilz.label} wählen` : 'Option wählen');
+            const icon = choicePilzBtn.querySelector('.videostory-choice-icon');
+            if (icon) icon.textContent = ok ? (pilz.icon || '🍄') : '🍄';
+        }
+    };
+
+    const setChoicesEnabled = (enabled) => {
+        const { choiceWindBtn, choicePilzBtn } = els();
+        [choiceWindBtn, choicePilzBtn].forEach(btn => {
+            if (!btn) return;
+            btn.disabled = !enabled;
+        });
+    };
+
+    const choose = async (choiceId) => {
+        if (state.transitioning) return;
+        const cur = getScene(state.currentSceneId);
+        if (!cur) return;
+        const choice = getChoiceById(cur, choiceId);
+        if (!choice?.nextSceneId) return;
+        const nextScene = getScene(choice.nextSceneId);
+        if (!nextScene) return;
+
+        state.transitioning = true;
+        setChoicesEnabled(false);
+
+        const { nextBtn } = els();
+        if (nextBtn) nextBtn.disabled = true;
+        await speakAsync(choice.narration || choice.label || '', { rate: 0.7, pitch: 1.05, cancelBefore: true });
+        await preloadSrc(nextScene.videoSrc, 5000);
+        setChoicesForScene(null);
+        await showScene(nextScene.id, { initial: false });
+        state.transitioning = false;
     };
 
     const showScene = async (sceneId, { initial = false } = {}) => {
@@ -2687,6 +2763,7 @@ function createVideoStoryRuntime() {
             await playMuted(activeEl);
             state.currentSceneId = scene.id;
             updateNextBtn(scene);
+            setChoicesForScene(scene);
             return;
         }
         await preloadSrc(scene.videoSrc, 5000);
@@ -2697,6 +2774,7 @@ function createVideoStoryRuntime() {
         state.activeSlot = state.activeSlot === 'a' ? 'b' : 'a';
         state.currentSceneId = scene.id;
         updateNextBtn(scene);
+        setChoicesForScene(scene);
     };
 
     const preloadStory = async (story) => {
@@ -2723,8 +2801,10 @@ function createVideoStoryRuntime() {
         state.transitioning = false;
         state.activeSlot = 'a';
         showScreen('videostory');
-        const { nextBtn, videoA, videoB, sceneSelect } = els();
+        const { nextBtn, videoA, videoB, sceneSelect, choiceWindBtn, choicePilzBtn } = els();
         if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = 'Weiter'; }
+        if (choiceWindBtn) choiceWindBtn.onclick = () => choose('wind');
+        if (choicePilzBtn) choicePilzBtn.onclick = () => choose('pilz');
         if (sceneSelect) {
             const scenes = Array.isArray(story?.scenes) ? story.scenes : [];
             sceneSelect.innerHTML = scenes
@@ -2749,6 +2829,7 @@ function createVideoStoryRuntime() {
         if (state.transitioning) return;
         const cur = getScene(state.currentSceneId);
         if (!cur) return;
+        if (Array.isArray(cur.choices) && cur.choices.length > 0) return;
         if (!cur.nextSceneId) {
             cleanupVideoStory();
             showScreen('overview');
@@ -2763,7 +2844,7 @@ function createVideoStoryRuntime() {
     };
 
     const close = () => {
-        const { stage, videoA, videoB, nextBtn, sceneSelect } = els();
+        const { stage, videoA, videoB, nextBtn, sceneSelect, choicesWrap, choiceWindBtn, choicePilzBtn } = els();
         if (stage) stage.classList.remove('is-transitioning');
         [videoA, videoB].forEach(v => {
             if (!v) return;
@@ -2775,6 +2856,9 @@ function createVideoStoryRuntime() {
             sceneSelect.onchange = null;
             sceneSelect.innerHTML = '';
         }
+        if (choiceWindBtn) choiceWindBtn.onclick = null;
+        if (choicePilzBtn) choicePilzBtn.onclick = null;
+        if (choicesWrap) choicesWrap.style.display = 'none';
         if (nextBtn) nextBtn.disabled = false;
         setLoading(false);
         updateLoading(0);
@@ -3470,6 +3554,85 @@ const SEMANTIC_ITEMS = [
     { level: 3, center: 'fenster', options: ['licht', 'fisch', 'hose'], correct: 'licht', expansion: 'Durch ein Fenster kommt Licht ins Zimmer.' }
 ];
 let semanticState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, expansion: '', selectedChoice: null };
+let semanticDragSourceEl = null;
+let semanticDragChoice = '';
+let semanticTouchDrag = null;
+let semanticConnectionClearTimeout = null;
+
+function ensureSemanticConnectionLayer() {
+    let layer = document.getElementById('semantic-connection-layer');
+    if (layer) return layer;
+    layer = document.createElement('div');
+    layer.id = 'semantic-connection-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(layer);
+    return layer;
+}
+
+function clearSemanticConnection() {
+    if (semanticConnectionClearTimeout != null) {
+        clearTimeout(semanticConnectionClearTimeout);
+        semanticConnectionClearTimeout = null;
+    }
+    const layer = document.getElementById('semantic-connection-layer');
+    if (layer) layer.innerHTML = '';
+}
+
+function showSemanticConnection(fromEl, toEl) {
+    if (!fromEl || !toEl) return;
+    const a = fromEl.getBoundingClientRect();
+    const b = toEl.getBoundingClientRect();
+    const x1 = a.left + a.width / 2;
+    const y1 = a.top + a.height / 2;
+    const x2 = b.left + b.width / 2;
+    const y2 = b.top + b.height / 2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.max(0, Math.hypot(dx, dy));
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    const layer = ensureSemanticConnectionLayer();
+    layer.innerHTML = '';
+    const line = document.createElement('div');
+    line.className = 'semantic-connection-line';
+    line.style.left = `${x1}px`;
+    line.style.top = `${y1 - 6}px`;
+    line.style.width = `${len}px`;
+    line.style.setProperty('--angle', `${angle}deg`);
+    const dot = document.createElement('div');
+    dot.className = 'semantic-connection-dot';
+    dot.style.left = `${x2}px`;
+    dot.style.top = `${y2}px`;
+    layer.appendChild(line);
+    layer.appendChild(dot);
+    semanticConnectionClearTimeout = setTimeout(() => {
+        clearSemanticConnection();
+    }, 900);
+}
+
+function semanticSelectChoice(choiceKey, el) {
+    const opts = document.getElementById('semantic-options');
+    if (opts) {
+        const prevSel = opts.querySelector('.word-card.selected');
+        if (prevSel) prevSel.classList.remove('selected');
+    }
+    if (el) el.classList.add('selected');
+    semanticState.selectedChoice = choiceKey;
+    const confirm = document.getElementById('btn-semantic-thumbs-up');
+    if (confirm) confirm.disabled = false;
+}
+
+async function semanticDropAnswer(choiceKey, optionEl, centerEl) {
+    if (!choiceKey) return;
+    if (semanticState.locked) return;
+    const item = semanticState.item;
+    if (!item) return;
+    semanticState.locked = true;
+    semanticSelectChoice(choiceKey, optionEl);
+    const confirm = document.getElementById('btn-semantic-thumbs-up');
+    if (confirm) confirm.disabled = true;
+    if (choiceKey === item.correct) showSemanticConnection(optionEl, centerEl);
+    await handleSemanticSelection(choiceKey);
+}
 
 function updateSemanticProgress(level, maxLevel) {
     const fill = document.getElementById('semantic-progress-fill');
@@ -3524,6 +3687,10 @@ async function startSemanticRound(newItem) {
     semanticState.selectedChoice = null;
     semanticState.locked = true;
     semanticState.promptStartedAt = 0;
+    semanticDragSourceEl = null;
+    semanticDragChoice = '';
+    semanticTouchDrag = null;
+    clearSemanticConnection();
 
     updateSemanticProgress(level, SEMANTIC_MAX_LEVEL);
     const levelEl = document.getElementById('semantic-level');
@@ -3539,6 +3706,28 @@ async function startSemanticRound(newItem) {
     const showHints = !!appSettings.observationMode;
     const centerCard = renderWordCard({ word: item.center, label: displayWordFromKey(item.center), idx: 0, difficulty: 'leicht', showLabel: false, showMicroLabel: showHints });
     center.appendChild(centerCard);
+    if (centerCard) {
+        centerCard.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            centerCard.classList.add('semantic-drop-target');
+        });
+        centerCard.addEventListener('dragleave', () => {
+            centerCard.classList.remove('semantic-drop-target');
+        });
+        centerCard.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            centerCard.classList.remove('semantic-drop-target');
+            const raw = (e.dataTransfer && (e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text'))) || '';
+            const picked = semanticDragSourceEl;
+            const finalChoice = semanticDragChoice || String(raw || '').trim();
+            if (semanticDragSourceEl) {
+                try { semanticDragSourceEl.classList.remove('is-dragging'); } catch {}
+            }
+            semanticDragSourceEl = null;
+            semanticDragChoice = '';
+            await semanticDropAnswer(finalChoice, picked, centerCard);
+        });
+    }
     const choices = shuffle(item.options.slice()).slice(0, 3);
     choices.forEach((w, idx) => {
         const card = renderWordCard({
@@ -3550,15 +3739,114 @@ async function startSemanticRound(newItem) {
             showMicroLabel: showHints,
             onClick: async (el) => {
                 if (semanticState.locked) return;
-                const prevSel = opts.querySelector('.word-card.selected');
-                if (prevSel) prevSel.classList.remove('selected');
-                if (el) el.classList.add('selected');
-                semanticState.selectedChoice = w;
-                const confirm = document.getElementById('btn-semantic-thumbs-up');
-                if (confirm) confirm.disabled = false;
+                semanticSelectChoice(w, el);
                 speakWord(displayWordFromKey(w));
             }
         });
+        if (card) {
+            card.setAttribute('draggable', 'true');
+            card.addEventListener('dragstart', (e) => {
+                if (semanticState.locked) {
+                    try { e.preventDefault(); } catch {}
+                    return;
+                }
+                semanticDragSourceEl = card;
+                semanticDragChoice = w;
+                card.classList.add('is-dragging');
+                semanticSelectChoice(w, card);
+                try {
+                    if (e.dataTransfer) {
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', w);
+                    }
+                } catch {}
+            });
+            card.addEventListener('dragend', () => {
+                card.classList.remove('is-dragging');
+                if (semanticDragSourceEl === card) {
+                    semanticDragSourceEl = null;
+                    semanticDragChoice = '';
+                }
+                if (centerCard) centerCard.classList.remove('semantic-drop-target');
+            });
+
+            card.addEventListener('pointerdown', (e) => {
+                if (semanticState.locked) return;
+                if (!e.isPrimary) return;
+                if (e.pointerType !== 'touch') return;
+                semanticTouchDrag = {
+                    pointerId: e.pointerId,
+                    word: w,
+                    sourceEl: card,
+                    started: false,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    ghostEl: null,
+                    offsetX: 0,
+                    offsetY: 0
+                };
+                try { card.setPointerCapture(e.pointerId); } catch {}
+            });
+            card.addEventListener('pointermove', (e) => {
+                const s = semanticTouchDrag;
+                if (!s) return;
+                if (e.pointerId !== s.pointerId) return;
+                const dx = e.clientX - s.startX;
+                const dy = e.clientY - s.startY;
+                const dist = Math.hypot(dx, dy);
+                if (!s.started && dist < 10) return;
+                if (!s.started) {
+                    s.started = true;
+                    const r = card.getBoundingClientRect();
+                    s.offsetX = s.startX - r.left;
+                    s.offsetY = s.startY - r.top;
+                    const ghost = card.cloneNode(true);
+                    ghost.classList.add('semantic-drag-ghost');
+                    ghost.style.width = `${r.width}px`;
+                    ghost.style.height = `${r.height}px`;
+                    document.body.appendChild(ghost);
+                    s.ghostEl = ghost;
+                    card.classList.add('is-dragging');
+                    semanticSelectChoice(w, card);
+                }
+                if (s.ghostEl) {
+                    s.ghostEl.style.left = `${e.clientX - s.offsetX}px`;
+                    s.ghostEl.style.top = `${e.clientY - s.offsetY}px`;
+                }
+                if (centerCard) {
+                    const cr = centerCard.getBoundingClientRect();
+                    const inside = e.clientX >= cr.left && e.clientX <= cr.right && e.clientY >= cr.top && e.clientY <= cr.bottom;
+                    centerCard.classList.toggle('semantic-drop-target', inside);
+                }
+            });
+            card.addEventListener('pointerup', async (e) => {
+                const s = semanticTouchDrag;
+                if (!s) return;
+                if (e.pointerId !== s.pointerId) return;
+                semanticTouchDrag = null;
+                card.classList.remove('is-dragging');
+                if (s.ghostEl) {
+                    try { s.ghostEl.remove(); } catch {}
+                }
+                if (!s.started) return;
+                if (!centerCard) return;
+                centerCard.classList.remove('semantic-drop-target');
+                const cr = centerCard.getBoundingClientRect();
+                const inside = e.clientX >= cr.left && e.clientX <= cr.right && e.clientY >= cr.top && e.clientY <= cr.bottom;
+                if (!inside) return;
+                await semanticDropAnswer(w, card, centerCard);
+            });
+            card.addEventListener('pointercancel', () => {
+                const s = semanticTouchDrag;
+                if (!s) return;
+                semanticTouchDrag = null;
+                card.classList.remove('is-dragging');
+                if (s.ghostEl) {
+                    try { s.ghostEl.remove(); } catch {}
+                }
+                if (centerCard) centerCard.classList.remove('semantic-drop-target');
+            });
+        }
         opts.appendChild(card);
     });
 
@@ -4838,4 +5126,3 @@ function setupLandingDice() {
     window.addEventListener('touchmove', onMove, { passive: false });
     window.addEventListener('touchend', onUp);
 }
-
