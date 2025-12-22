@@ -1,4 +1,4 @@
-   
+
 
 // State
 let currentChild = null;
@@ -13,6 +13,10 @@ let landingTitleVideoStartTimeout = null;
 let landingTitleVideoStopper = null;
 let disableLandingLogoTransitionOnce = false;
 let profileEditUnlocked = false;
+let bootSplashWasShown = false;
+let bootSplashController = null;
+let bootSplashAppReady = false;
+let bootSplashVideoReady = false;
 
 // Pädagogisches Gesamtmodell (entwicklungsorientiert, nicht spiel-basiert)
 // Dimensionen: A Hörwahrnehmung, B phonologische Bewusstheit, C Wortschatz, D Semantik, E Grammatik, F Erzählen, G Sprachgedächtnis
@@ -116,6 +120,25 @@ const screens = {
     videos: document.getElementById('videos-screen')
 };
 
+const SCREEN_TO_GAME_ID = {
+    training: 'training',
+    story: 'story',
+    memory: 'memory',
+    sound: 'sound',
+    sound_detail: 'sound',
+    video: 'video',
+    videostory: 'videostory',
+    lang_memory: 'lang_memory',
+    sentence: 'sentence',
+    semantic: 'semantic',
+    listen: 'listen'
+};
+let activeGameSession = null;
+
+function getGameIdForScreen(screenName) {
+    return SCREEN_TO_GAME_ID[screenName] || '';
+}
+
 function loadSettings() {
     try {
         const raw = localStorage.getItem(STORAGE_KEYS.settings);
@@ -214,7 +237,7 @@ function recordPedagogicalOutcome({ gameId, dimension, correct, responseMs, repe
         d.stableStreak = 0;
     }
     supportProfile.dimensions[dimension] = d;
-    const gm = supportProfile.gameMetrics[gameId] || { trials: 0, correct: 0, repeats: 0, avgMs: null, totalMs: 0, errorClusters: {} };
+    const gm = supportProfile.gameMetrics[gameId] || { trials: 0, correct: 0, repeats: 0, avgMs: null, totalMs: 0, runs: 0, sessionMs: 0, errorClusters: {} };
     gm.trials += 1;
     if (safeCorrect) gm.correct += 1;
     gm.repeats += Math.max(0, repetitions || 0);
@@ -231,8 +254,8 @@ function recordPedagogicalOutcome({ gameId, dimension, correct, responseMs, repe
 // Globales Feedback: ruhig, fehlerfreundlich, ohne negatives Markieren.
 function getFeedbackPhrases() {
     return {
-        confirm: 'Genau.',
-        confirmAlt: 'Super.',
+        confirm: 'Super.',
+        confirmAlt: 'Toll.',
         repeat: 'Nochmal in Ruhe.',
         model: 'Ich zeige es dir.',
         ready: 'Bereit.',
@@ -259,6 +282,30 @@ function incrementDimensionRepetitions({ dimensions, amount }) {
         const prev = typeof cur.repetitions === 'number' ? cur.repetitions : 0;
         supportProfile.dimensions[dimension] = { ...cur, repetitions: prev + inc };
     });
+    saveSupportProfile();
+}
+
+function recordGameRun(gameId, amount = 1) {
+    if (!currentChild) return;
+    if (!supportProfile) ensureSupportProfileLoaded();
+    if (!supportProfile) return;
+    const inc = Math.max(0, parseInt(amount, 10) || 0);
+    if (!inc) return;
+    const prev = supportProfile.gameMetrics[gameId] || { trials: 0, correct: 0, repeats: 0, avgMs: null, totalMs: 0, runs: 0, sessionMs: 0, errorClusters: {} };
+    prev.runs = (prev.runs || 0) + inc;
+    supportProfile.gameMetrics[gameId] = prev;
+    saveSupportProfile();
+}
+
+function recordGameSessionMs(gameId, ms) {
+    if (!currentChild) return;
+    if (!supportProfile) ensureSupportProfileLoaded();
+    if (!supportProfile) return;
+    const add = Math.max(0, Math.round(ms || 0));
+    if (!add) return;
+    const prev = supportProfile.gameMetrics[gameId] || { trials: 0, correct: 0, repeats: 0, avgMs: null, totalMs: 0, runs: 0, sessionMs: 0, errorClusters: {} };
+    prev.sessionMs = (prev.sessionMs || 0) + add;
+    supportProfile.gameMetrics[gameId] = prev;
     saveSupportProfile();
 }
 
@@ -378,9 +425,144 @@ function speakAsync(text, opts) {
     });
 }
 
+function startBootSplash() {
+    const splash = document.getElementById('boot-splash');
+    const video = document.getElementById('boot-splash-video');
+    if (!splash || !video) return;
+    bootSplashWasShown = true;
+    bootSplashAppReady = false;
+    bootSplashVideoReady = false;
+
+    video.muted = true;
+    video.loop = false;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.controls = false;
+    video.preload = 'auto';
+
+    const progressFill = document.getElementById('boot-splash-progress-fill');
+    if (progressFill) progressFill.style.width = '0%';
+
+    const srcCandidates = ['./video/title.mp4', './title.mp4', './images/title.mp4'];
+    let srcIndex = 0;
+    let rafId = null;
+    let fallbackTimer = null;
+    let startedAt = nowMs();
+
+    const stopProgress = () => {
+        if (rafId != null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    };
+
+    const hide = () => {
+        stopProgress();
+        if (fallbackTimer != null) {
+            clearTimeout(fallbackTimer);
+            fallbackTimer = null;
+        }
+        splash.classList.add('is-hiding');
+        setTimeout(() => {
+            try { video.pause(); } catch {}
+            try { video.removeAttribute('src'); video.load(); } catch {}
+            try { splash.remove(); } catch {}
+            if (bootSplashController) bootSplashController = null;
+        }, 750);
+    };
+
+    const tryHide = () => {
+        if (!bootSplashAppReady || !bootSplashVideoReady) return;
+        hide();
+    };
+
+    const updateProgress = () => {
+        if (!progressFill) return;
+        const dur = video.duration;
+        let pct = 0;
+        if (Number.isFinite(dur) && dur > 0) {
+            const earlyMs = 1000;
+            const earlySec = earlyMs / 1000;
+            const effectiveDur = Math.max(0.1, dur - earlySec);
+            pct = clamp((video.currentTime / effectiveDur) * 100, 0, 99);
+        } else {
+            const elapsed = nowMs() - startedAt;
+            pct = clamp((elapsed / 3250) * 95, 0, 95);
+        }
+        progressFill.style.width = `${pct}%`;
+        rafId = requestAnimationFrame(updateProgress);
+    };
+
+    const tryNextSrc = () => {
+        const src = srcCandidates[srcIndex++];
+        if (!src) return false;
+        try {
+            startedAt = nowMs();
+            if (progressFill) progressFill.style.width = '0%';
+            video.src = src;
+            video.load();
+        } catch {}
+        return true;
+    };
+
+    const onError = () => {
+        if (tryNextSrc()) return;
+        bootSplashVideoReady = true;
+        if (progressFill) progressFill.style.width = '100%';
+        tryHide();
+        hide();
+    };
+
+    video.addEventListener('error', onError);
+    if (!tryNextSrc()) {
+        bootSplashVideoReady = true;
+        if (progressFill) progressFill.style.width = '100%';
+        tryHide();
+        hide();
+        return;
+    }
+
+    bootSplashController = { tryHide };
+    fallbackTimer = setTimeout(() => {
+        fallbackTimer = null;
+        bootSplashVideoReady = true;
+        if (progressFill) progressFill.style.width = '100%';
+        tryHide();
+    }, 10000);
+
+    const onEnded = () => {
+        bootSplashVideoReady = true;
+        if (progressFill) progressFill.style.width = '100%';
+        tryHide();
+    };
+    video.addEventListener('ended', onEnded, { once: true });
+
+    const tryPlay = () => {
+        try {
+            video.currentTime = 0;
+            const p = video.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+        } catch {}
+    };
+
+    video.addEventListener('loadeddata', () => {
+        stopProgress();
+        updateProgress();
+        tryPlay();
+    }, { once: true });
+    tryPlay();
+}
+
+function markBootSplashAppReady() {
+    bootSplashAppReady = true;
+    if (bootSplashController) bootSplashController.tryHide();
+}
+
 // Initialisierung
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 App wird initialisiert...');
+
+    startBootSplash();
     
     // Warte auf DataManager
     await waitForDataManager();
@@ -392,13 +574,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Zeige Landing initial
     showScreen('landing');
     renderChildrenList();
-    scheduleLandingTitleVideo();
+    if (!bootSplashWasShown) scheduleLandingTitleVideo();
     
     // Setup Event Listeners
     setupEventListeners();
     setupLandingDice();
     
     console.log('✅ App bereit!');
+    markBootSplashAppReady();
 });
 
 function stopLandingTitleVideo() {
@@ -652,6 +835,15 @@ function setupEventListeners() {
             resetPedagogicalProfile();
             try { localStorage.removeItem(getSoundProgressStorageKey()); } catch {}
             renderLevelsGrid();
+        });
+    }
+
+    const profileEditToggle = document.getElementById('btn-profile-edit-toggle');
+    if (profileEditToggle) {
+        profileEditToggle.addEventListener('click', () => {
+            if (!currentChild) return;
+            profileEditUnlocked = !profileEditUnlocked;
+            renderProfileCard();
         });
     }
 
@@ -916,7 +1108,13 @@ function setupEventListeners() {
     const endLangMemoryBtn = document.getElementById('btn-end-lang-memory');
     if (endLangMemoryBtn) endLangMemoryBtn.addEventListener('click', () => showScreen('overview'));
     const endSentenceBtn = document.getElementById('btn-end-sentence');
-    if (endSentenceBtn) endSentenceBtn.addEventListener('click', () => showScreen('overview'));
+    if (endSentenceBtn) endSentenceBtn.addEventListener('click', async () => {
+        const cur = getGameDifficulty('sentence') || {};
+        const nextLevel = clamp((cur.level ?? 1) - 1, 1, SENTENCE_MAX_LEVEL);
+        setGameDifficulty('sentence', { level: nextLevel });
+        sentenceState.locked = true;
+        await startSentenceRound(true);
+    });
     const endSemanticBtn = document.getElementById('btn-end-semantic');
     if (endSemanticBtn) endSemanticBtn.addEventListener('click', () => showScreen('overview'));
     const endListenBtn = document.getElementById('btn-end-listen');
@@ -931,7 +1129,7 @@ function setupEventListeners() {
     if (endMetadataBtn) endMetadataBtn.addEventListener('click', () => { showScreen('forum'); renderForum(); });
     const videoQuizStart = document.getElementById('btn-video-quiz-start');
     if (videoQuizStart) {
-        videoQuizStart.addEventListener('click', () => startVideoQuiz());
+        videoQuizStart.addEventListener('click', () => startVideoPlayback());
     }
     const videoNextBtn = document.getElementById('btn-video-next');
     if (videoNextBtn) {
@@ -1028,6 +1226,15 @@ function handleNavBack() {
 // Screen Navigation
 function showScreen(screenName) {
     const prev = currentScreenName;
+    const prevGameId = getGameIdForScreen(prev);
+    const nextGameId = getGameIdForScreen(screenName);
+    if (activeGameSession && prevGameId && activeGameSession.gameId === prevGameId && nextGameId !== prevGameId) {
+        recordGameSessionMs(prevGameId, nowMs() - (activeGameSession.startedAt || nowMs()));
+        activeGameSession = null;
+    }
+    if (nextGameId && (!activeGameSession || activeGameSession.gameId !== nextGameId)) {
+        activeGameSession = { gameId: nextGameId, startedAt: nowMs() };
+    }
     const skipLandingLogoTransition = disableLandingLogoTransitionOnce;
     disableLandingLogoTransitionOnce = false;
     let logoTransition = null;
@@ -1277,6 +1484,53 @@ const STORY_WORDS = [
 ];
 let doneWords = new Set();
 let activeTargetWord = null;
+const STORY_LEVEL_SIZE = 6;
+let storyLevel = 1;
+let storyLevelWords = [];
+let storyLevelTransitioning = false;
+let storyHasStarted = false;
+let storyRoundCompleted = false;
+
+function buildStoryLevelWords() {
+    const pool = shuffle(STORY_WORDS);
+    const picked = [];
+    const seen = new Set();
+    for (const w of pool) {
+        const key = normalizeWordKey(w);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        picked.push({ label: w, key });
+        if (picked.length >= STORY_LEVEL_SIZE) break;
+    }
+    storyLevelWords = picked;
+    storyRoundCompleted = false;
+}
+
+function completeStoryRound() {
+    if (storyRoundCompleted) return;
+    storyRoundCompleted = true;
+    recordGameRun('story', 1);
+    incrementDimensionRepetitions({ dimensions: GAME_METADATA.story.focusAreas, amount: 1 });
+}
+
+function advanceStoryLevel({ auto = false } = {}) {
+    if (storyLevelTransitioning) return;
+    storyLevelTransitioning = true;
+    storyLevel += 1;
+    doneWords.clear();
+    currentQuizTargetKey = '';
+    currentQuizTarget = '';
+    storyQuizRound = 0;
+    storyQuizActive = true;
+    storyHasStarted = true;
+    buildStoryLevelWords();
+    renderStoryGame();
+    const delay = auto ? 350 : 0;
+    setTimeout(() => {
+        storyLevelTransitioning = false;
+        runStoryQuizStep();
+    }, delay);
+}
 
 function openStoryGame() {
     showScreen('story');
@@ -1285,6 +1539,11 @@ function openStoryGame() {
     storyQuizRound = 0;
     currentQuizTarget = '';
     doneWords.clear();
+    storyLevel = 1;
+    storyLevelWords = [];
+    storyHasStarted = false;
+    storyLevelTransitioning = false;
+    storyRoundCompleted = false;
     setFocusTargets([]);
     storyState = { promptStartedAt: 0, repetitions: 0 };
     storyQuizState = { promptStartedAt: 0, repetitions: 0 };
@@ -1356,6 +1615,14 @@ let memoryFirst = null;
 let memorySecond = null;
 let memoryLock = false;
 let memoryTotalPairs = 0;
+let memoryRoundCompleted = false;
+
+function completeMemoryRound() {
+    if (memoryRoundCompleted) return;
+    memoryRoundCompleted = true;
+    recordGameRun('memory', 1);
+    incrementDimensionRepetitions({ dimensions: GAME_METADATA.memory.focusAreas, amount: 1 });
+}
 
 function openMemoryGame() {
     showScreen('memory');
@@ -1414,6 +1681,7 @@ function buildMemoryRound() {
     memoryLock = false;
     memoryState.firstPickedAt = 0;
     memoryState.repetitions = 0;
+    memoryRoundCompleted = false;
     grid.innerHTML = '';
     pairs.forEach((p, idx) => {
         memoryDeck.push({ word: p.a, pairId: idx });
@@ -1499,6 +1767,7 @@ function handleMemoryCardClick(card, imgPath, word, currentLevel) {
         memorySecond = null;
         memoryLock = false;
         if (memoryFoundPairs >= memoryTotalPairs) {
+            completeMemoryRound();
             const info = document.getElementById('memory-info');
             if (info) info.textContent = 'Super! Alle Paare gefunden!';
         }
@@ -1594,9 +1863,12 @@ function renderStoryGame() {
     if (!list) return;
     list.innerHTML = '';
     setFocusTargets([]);
-    const words = shuffle(STORY_WORDS);
-    words.forEach((word, idx) => {
-        const lw = normalizeWordKey(word);
+    const words = storyHasStarted
+        ? (storyLevelWords.length ? storyLevelWords : (buildStoryLevelWords(), storyLevelWords))
+        : shuffle(STORY_WORDS).map(w => ({ label: w, key: normalizeWordKey(w) }));
+    words.forEach((item, idx) => {
+        const word = item.label;
+        const lw = item.key || normalizeWordKey(word);
         const card = document.createElement('div');
         card.className = 'word-card';
         card.dataset.word = lw;
@@ -1608,6 +1880,16 @@ function renderStoryGame() {
         `;
         const imgEl = card.querySelector('img');
         applyWordImage(imgEl, lw, idx, 'leicht');
+        if (storyHasStarted && doneWords.has(lw)) {
+            const wrap = card.querySelector('.word-image-wrap');
+            if (wrap) {
+                const badge = document.createElement('div');
+                badge.className = 'done-badge';
+                badge.textContent = '✓';
+                wrap.appendChild(badge);
+            }
+            card.classList.add('done');
+        }
         card.addEventListener('click', () => {
             speakWord(word);
             if (!storyQuizActive || !currentQuizTargetKey) return;
@@ -1621,6 +1903,17 @@ function renderStoryGame() {
                 markWordDone(lw);
                 updateStoryQuizProgress();
                 const srs = document.getElementById('story-recognition-status');
+                if (doneWords.size >= (storyLevelWords.length || STORY_LEVEL_SIZE)) {
+                    if (srs) srs.textContent = 'Super! Nächstes Level…';
+                    if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = 'Weiter'; }
+                    recordOutcomeForDimensions({ gameId: 'story', dimensions: ['C', 'A'], correct: true, responseMs, repetitions });
+                    adaptDifficultyGeneric('story', { correct: true, responseMs, repetitions });
+                    currentQuizTargetKey = '';
+                    currentQuizTarget = '';
+                    completeStoryRound();
+                    advanceStoryLevel({ auto: true });
+                    return;
+                }
                 if (srs) srs.textContent = 'Richtig! Drück auf „Weiter“.';
                 if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = 'Weiter'; }
                 recordOutcomeForDimensions({ gameId: 'story', dimensions: ['C', 'A'], correct: true, responseMs, repetitions });
@@ -1639,14 +1932,20 @@ function renderStoryGame() {
         list.appendChild(card);
     });
     const srs6 = document.getElementById('story-recognition-status');
-    if (srs6) srs6.textContent = 'Tippe auf „Spiel beginnen“ und starte.';
     const si = document.getElementById('story-info');
-    if (si) si.textContent = 'Höre das Wort und tippe das passende Bild.';
+    if (!storyQuizActive) {
+        if (srs6) srs6.textContent = 'Schaut euch gemeinsam diese Bilder an. Sie kommen in allen Spielen vor und bereiten den Wortschatz des Kindes auf euer Spielerlebnis vor.';
+        if (si) si.textContent = 'Höre das Wort und tippe das passende Bild.';
+    }
     const nextBtn = document.getElementById('btn-next-level');
     if (nextBtn) {
         nextBtn.classList.remove('btn-secondary');
-        nextBtn.classList.add('btn-success');
-        nextBtn.style.display = 'none';
+        nextBtn.classList.add('btn-primary');
+        nextBtn.style.display = storyHasStarted ? 'inline-block' : 'none';
+        nextBtn.onclick = () => {
+            if (!storyHasStarted) return;
+            advanceStoryLevel({ auto: false });
+        };
     }
     const quizStart = document.getElementById('btn-story-quiz-start');
     if (quizStart) {
@@ -1931,41 +2230,36 @@ function updateStoryQuizProgress() {
     const wrap = document.getElementById('story-quiz-progress-wrap');
     if (wrap) wrap.style.display = storyQuizActive ? 'block' : 'none';
     if (!fill) return;
-    const pct = STORY_WORDS.length ? Math.round((doneWords.size / STORY_WORDS.length) * 100) : 0;
+    const total = storyLevelWords.length || STORY_LEVEL_SIZE;
+    const pct = total ? Math.round((doneWords.size / total) * 100) : 0;
     fill.style.width = `${pct}%`;
 }
 
 function startStoryQuiz() {
     storyQuizActive = true;
     storyQuizRound = 0;
-    runStoryQuizStep();
+    storyHasStarted = true;
+    storyRoundCompleted = false;
+    buildStoryLevelWords();
+    doneWords.clear();
     renderStoryGame();
+    runStoryQuizStep();
 }
 
 function runStoryQuizStep() {
-    const remaining = STORY_WORDS
-        .map(w => normalizeWordKey(w))
+    if (!storyLevelWords.length) buildStoryLevelWords();
+    const remaining = storyLevelWords
+        .map(w => w.key)
         .filter(k => k && !doneWords.has(k));
 
     if (!remaining.length) {
-        storyQuizActive = false;
-        incrementDimensionRepetitions({ dimensions: GAME_METADATA.story.focusAreas, amount: 1 });
-        const info = document.getElementById('story-info');
-        if (info) info.textContent = 'Super! Alle Bilder geschafft.';
-        const srs = document.getElementById('story-recognition-status');
-        if (srs) srs.textContent = 'Tippe auf „Spiel beginnen“ für eine neue Runde.';
-        const quizStart = document.getElementById('btn-story-quiz-start');
-        if (quizStart) { quizStart.disabled = false; quizStart.textContent = 'Nochmal spielen'; }
-        const quizMic = document.getElementById('btn-story-quiz-mic');
-        if (quizMic) quizMic.style.display = 'none';
-        currentQuizTargetKey = '';
-        currentQuizTarget = '';
-        updateStoryQuizProgress();
+        completeStoryRound();
+        advanceStoryLevel({ auto: true });
         return;
     }
 
     const targetKey = remaining[Math.floor(Math.random() * remaining.length)];
-    const targetLabel = STORY_WORDS.find(w => normalizeWordKey(w) === targetKey) || targetKey;
+    const targetLabel = storyLevelWords.find(w => w.key === targetKey)?.label || targetKey;
     currentQuizTargetKey = targetKey;
     currentQuizTarget = targetLabel;
     storyQuizState.promptStartedAt = nowMs();
@@ -1986,10 +2280,6 @@ function runStoryQuizStep() {
 
 function nextStoryQuizStep() {
     if (!storyQuizActive) {
-        if (doneWords.size >= STORY_WORDS.length) {
-            doneWords.clear();
-            renderStoryGame();
-        }
         startStoryQuiz();
         return;
     }
@@ -2009,6 +2299,75 @@ const VIDEO_LEVELS = [
 ];
 let videoIndex = 0;
 let videoSelected = new Set();
+let videoPlayToken = 0;
+let videoQuizRevealTimeout = null;
+
+function hideVideoQuizUi() {
+    if (videoQuizRevealTimeout) {
+        clearTimeout(videoQuizRevealTimeout);
+        videoQuizRevealTimeout = null;
+    }
+    const wrap = document.getElementById('video-quiz-wrap');
+    if (wrap) {
+        wrap.classList.remove('is-visible');
+        wrap.style.display = 'none';
+    }
+    const grid = document.getElementById('video-card-grid');
+    if (grid) grid.innerHTML = '';
+    const next = document.getElementById('btn-video-next');
+    if (next) next.disabled = true;
+    videoSelected.clear();
+}
+
+function showVideoQuizUi() {
+    const wrap = document.getElementById('video-quiz-wrap');
+    if (!wrap) return;
+    wrap.style.display = 'block';
+    wrap.classList.remove('is-visible');
+    requestAnimationFrame(() => wrap.classList.add('is-visible'));
+}
+
+function startVideoPlayback() {
+    const player = document.getElementById('video-player');
+    const btn = document.getElementById('btn-video-quiz-start');
+    if (!player) return;
+    hideVideoQuizUi();
+    videoPlayToken += 1;
+    const token = videoPlayToken;
+    if (btn) btn.disabled = true;
+    const info = document.getElementById('video-info');
+    if (info) info.textContent = 'Schau dir das Video an.';
+    player.onended = () => handleVideoPlaybackEnded(token);
+    try {
+        const p = player.play();
+        if (p && typeof p.catch === 'function') {
+            p.catch(() => {
+                if (token !== videoPlayToken) return;
+                if (btn) btn.disabled = false;
+                try { player.controls = true; } catch {}
+            });
+        }
+    } catch {
+        if (btn) btn.disabled = false;
+        try { player.controls = true; } catch {}
+    }
+}
+
+function handleVideoPlaybackEnded(token) {
+    if (token !== videoPlayToken) return;
+    if (videoQuizRevealTimeout) {
+        clearTimeout(videoQuizRevealTimeout);
+        videoQuizRevealTimeout = null;
+    }
+    videoQuizRevealTimeout = setTimeout(() => {
+        if (token !== videoPlayToken) return;
+        speakWord('Was hast du im Video gesehen?');
+        startVideoQuiz();
+        showVideoQuizUi();
+        videoQuizRevealTimeout = null;
+    }, 1250);
+}
+
 function openVideoGame() {
     videoIndex = 0;
     videoSelected.clear();
@@ -2019,19 +2378,25 @@ function renderVideoStep() {
     const v = VIDEO_LEVELS[videoIndex];
     const player = document.getElementById('video-player');
     const info = document.getElementById('video-info');
-    if (info) info.textContent = 'Klicke auf das Video, schaue es an und starte dann das Quiz';
-    const q = document.getElementById('video-question');
-    if (q) q.style.display = 'none';
+    if (info) info.textContent = 'Drück auf „Spiel beginnen“.';
+    hideVideoQuizUi();
     if (player) {
+        videoPlayToken += 1;
+        try { player.pause(); } catch {}
         player.src = v.src;
         player.load();
+        try { player.currentTime = 0; } catch {}
+        try { player.controls = false; } catch {}
+        player.onended = null;
     }
     const grid = document.getElementById('video-card-grid');
     if (grid) grid.innerHTML = '';
     const next = document.getElementById('btn-video-next');
     if (next) next.disabled = true;
+    const prev = document.getElementById('btn-video-prev');
+    if (prev) prev.disabled = videoIndex <= 0;
     const quizStart = document.getElementById('btn-video-quiz-start');
-    if (quizStart) quizStart.disabled = false;
+    if (quizStart) { quizStart.disabled = false; quizStart.textContent = 'Spiel beginnen'; }
     const fill = document.getElementById('video-progress-fill');
     if (fill) {
         const pct = Math.round(((videoIndex + 1) / VIDEO_LEVELS.length) * 100);
@@ -2044,8 +2409,6 @@ function startVideoQuiz() {
     videoQuizState = { startedAt: nowMs(), toggles: 0, recorded: false };
     const info = document.getElementById('video-info');
     if (info) info.textContent = 'Wähle die richtigen Karten.';
-    const q = document.getElementById('video-question');
-    if (q) q.style.display = 'block';
     const grid = document.getElementById('video-card-grid');
     if (!grid) return;
     grid.innerHTML = '';
@@ -2067,6 +2430,7 @@ function startVideoQuiz() {
         const img = card.querySelector('img');
         applyWordImage(img, lw, idx, 'mittel');
         card.addEventListener('click', () => {
+            speakWord(opt);
             videoQuizState.toggles = (videoQuizState.toggles || 0) + 1;
             const wasSelected = videoSelected.has(opt);
             if (wasSelected) {
@@ -2470,8 +2834,9 @@ function renderWordCard({ word, label, imageKey, idx, difficulty, onClick, showL
 }
 
 // Sprachgedächtnis (G): Drei Wörter hören, dann fehlt eins → rezeptiv erinnern.
-let langMemoryState = { words: [], missing: '', repetitions: 0, promptStartedAt: 0, locked: false, phase: 'listen' };
+let langMemoryState = { words: [], missing: '', missingIndex: -1, repetitions: 0, promptStartedAt: 0, locked: false, phase: 'intro' };
 let langMemoryLastOpenAt = 0;
+let langMemoryIntroToken = 0;
 const LANG_MEMORY_LEVELS = [
     ['ball', 'fall', 'stall'],
     ['nase', 'hase', 'vase'],
@@ -2506,35 +2871,88 @@ const LANG_MEMORY_LEVELS = [
 ];
 const LANG_MEMORY_POOL = Array.from(new Set(LANG_MEMORY_LEVELS.flat().map(w => String(w || '').toLowerCase()).filter(Boolean)));
 
+const LANG_MEMORY_QUESTION_TEXT = 'Unten sind jetzt neue Wörter.\nWelches Wort fehlt oben? Tipp es an.';
+
+function setLangMemoryArrowVisible(visible) {
+    const el = document.getElementById('lang-memory-arrow');
+    if (!el) return;
+    el.style.display = visible ? 'flex' : 'none';
+}
+
+function setLangMemoryStageText(text) {
+    const stageBox = document.getElementById('lang-memory-stage');
+    if (!stageBox) return;
+    const t = String(text || '').trim();
+    stageBox.innerHTML = '';
+    if (!t) return;
+    const p = document.createElement('p');
+    p.style.margin = '0';
+    p.style.lineHeight = '1.35';
+    p.style.whiteSpace = 'pre-line';
+    p.textContent = t;
+    stageBox.appendChild(p);
+}
+
+function getLangMemoryIntroStageText(words) {
+    const list = formatLangMemoryWords(words).join(', ');
+    return `Schau mal: drei Wörter.\n(${list})\nMerk sie dir.\nEin Wort geht weg.`;
+}
+
+async function speakLangMemoryQuestion(cancelBefore = false) {
+    await speakAsync('Unten sind jetzt neue Wörter.', { rate: 0.7, pitch: 1.05, cancelBefore });
+    await speakAsync('Welches Wort fehlt oben? Tipp es an.', { rate: 0.7, pitch: 1.05, cancelBefore: false });
+}
+
+async function runLangMemoryIntroSequence(cancelFirst = true) {
+    if (!langMemoryState.words.length) return;
+    const diff = getGameDifficulty('lang_memory') || {};
+    langMemoryIntroToken += 1;
+    langMemoryState.locked = true;
+    setLangMemoryStageText(getLangMemoryIntroStageText(langMemoryState.words));
+    await speakAsync('Schau mal: drei Wörter.', { rate: 0.7, pitch: 1.05, cancelBefore: cancelFirst });
+    await presentLangMemoryWords(langMemoryState.words, diff.paceMs, null, false);
+    await speakAsync('Merk sie dir.', { rate: 0.7, pitch: 1.05, cancelBefore: false });
+    await speakAsync('Ein Wort geht weg.', { rate: 0.7, pitch: 1.05, cancelBefore: false });
+    langMemoryState.locked = false;
+    await beginLangMemoryQuestion({ speakPrompt: false });
+    setLangMemoryStageText(LANG_MEMORY_QUESTION_TEXT);
+    await speakLangMemoryQuestion(false);
+}
+
 async function openLangMemoryGame() {
     const t = nowMs();
     if (t - langMemoryLastOpenAt < 650) return;
     langMemoryLastOpenAt = t;
     showScreen('lang_memory');
-    langMemoryState = { words: [], missing: '', repetitions: 0, promptStartedAt: 0, locked: false, phase: 'listen' };
+    langMemoryState = { words: [], missing: '', missingIndex: -1, repetitions: 0, promptStartedAt: 0, locked: false, phase: 'intro' };
     getOrInitGameDifficulty('lang_memory', { paceMs: 850, delayMs: 950, level: 1, stableStreak: 0 });
     await startLangMemoryRound(true);
     const replay = document.getElementById('btn-lang-memory-replay');
     if (replay) replay.onclick = async () => replayLangMemoryPrompt();
-    const ready = document.getElementById('btn-lang-memory-ready');
-    if (ready) ready.onclick = async () => beginLangMemoryQuestion();
+
+    const token = ++langMemoryIntroToken;
+    setTimeout(async () => {
+        if (token !== langMemoryIntroToken) return;
+        if (!screens.lang_memory?.classList?.contains('active')) return;
+        if (langMemoryState.phase !== 'intro') return;
+        if (langMemoryState.locked) return;
+        await runLangMemoryIntroSequence(true);
+    }, 1500);
 }
 
 async function replayLangMemoryPrompt() {
     if (!langMemoryState.words.length) return;
-    const diff = getGameDifficulty('lang_memory') || {};
     const replay = document.getElementById('btn-lang-memory-replay');
-    const ready = document.getElementById('btn-lang-memory-ready');
     const prevLocked = langMemoryState.locked;
     if (replay) replay.disabled = true;
-    if (ready) ready.disabled = true;
     langMemoryState.locked = true;
-    if (langMemoryState.phase === 'listen') {
-        await speakAsync('Kannst du herausfinden, welches Wort gleich fehlen wird?', { rate: 0.7, pitch: 1.05 });
-        await presentLangMemoryWords(langMemoryState.words, diff.paceMs, 'Drück den Daumen, wenn du bereit bist.', false);
-        if (ready) ready.disabled = false;
+    langMemoryIntroToken += 1;
+    if (langMemoryState.phase === 'question') {
+        setLangMemoryStageText(LANG_MEMORY_QUESTION_TEXT);
+        await speakLangMemoryQuestion(true);
     } else {
-        await speakAsync('Welches Wort fehlt nun?', { rate: 0.7, pitch: 1.05 });
+        langMemoryState.locked = false;
+        await runLangMemoryIntroSequence(true);
     }
     if (replay) replay.disabled = false;
     langMemoryState.locked = prevLocked;
@@ -2559,7 +2977,6 @@ function formatLangMemoryWords(words) {
 
 async function startLangMemoryRound(newSet) {
     const difficulty = getGameDifficulty('lang_memory') || {};
-    const stage = getDimensionStage('G');
     const maxLevel = LANG_MEMORY_LEVELS.length || 1;
     const level = clamp(parseInt(difficulty.level || '1', 10) || 1, 1, maxLevel);
     const triple = LANG_MEMORY_LEVELS[level - 1] || ['haus', 'maus', 'laus'];
@@ -2568,52 +2985,60 @@ async function startLangMemoryRound(newSet) {
     const missing = words[missingIdx];
     langMemoryState.words = words;
     langMemoryState.missing = missing;
+    langMemoryState.missingIndex = missingIdx;
     langMemoryState.locked = true;
-    langMemoryState.phase = 'listen';
+    langMemoryState.phase = 'intro';
+
+    const levelEl = document.getElementById('lang-memory-level');
+    if (levelEl) levelEl.textContent = `Level ${level}/${maxLevel}`;
 
     const info = document.getElementById('lang-memory-info');
     if (info) {
-        const said = `${formatLangMemoryWords(words).join(', ')}, Drück den Daumen, wenn du bereit bist.`;
-        info.textContent = stage >= 3
-            ? `Hör gut zu. Danach fehlt ein Bild. (Level ${level}/${maxLevel}) Drück auf 🔊 um zu hören: "${said}"`
-            : `Hör gut zu. (Level ${level}/${maxLevel}) Drück auf 🔊 um zu hören: "${said}"`;
+        info.textContent = '';
     }
     updateLangMemoryProgress(level, maxLevel);
-    const stageBox = document.getElementById('lang-memory-stage');
-    if (stageBox) stageBox.innerHTML = `<p>👂</p>`;
+    setLangMemoryStageText(getLangMemoryIntroStageText(words));
 
     const present = document.getElementById('lang-memory-present');
     const options = document.getElementById('lang-memory-options');
     if (present) present.innerHTML = '';
     if (options) options.innerHTML = '';
+    if (options) options.classList.remove('is-framed');
+    setLangMemoryArrowVisible(false);
 
     if (present) {
         words.forEach((w, idx) => {
-            const c = renderWordCard({ word: w, idx, difficulty: 'leicht', showLabel: false });
+            const c = renderWordCard({
+                word: w,
+                idx,
+                difficulty: 'leicht',
+                showLabel: false,
+                onClick: (el) => {
+                    if (el && el.classList.contains('is-missing')) return;
+                    speakWord(w);
+                }
+            });
             present.appendChild(c);
         });
     }
 
-    const ready = document.getElementById('btn-lang-memory-ready');
     const replay = document.getElementById('btn-lang-memory-replay');
-    if (ready) ready.disabled = false;
     if (replay) replay.disabled = false;
     langMemoryState.locked = false;
 }
 
 async function presentLangMemoryWords(words, paceMs, afterText, cancelFirst = true) {
-    const stageBox = document.getElementById('lang-memory-stage');
-    if (stageBox) stageBox.innerHTML = `<p>👂</p>`;
+    const wordRate = 0.7;
     for (let i = 0; i < words.length; i++) {
         setFocusTargets([]);
-        await speakAsync(words[i], { rate: 0.7, pitch: 1.05, cancelBefore: cancelFirst ? i === 0 : false });
+        await speakAsync(words[i], { rate: wordRate, pitch: 1.05, cancelBefore: cancelFirst ? i === 0 : false });
         await sleep(clamp(paceMs ?? 850, 550, 1400));
     }
     if (afterText) await speakAsync(afterText, { rate: 0.7, pitch: 1.05, cancelBefore: false });
 }
 
-async function beginLangMemoryQuestion() {
-    if (langMemoryState.phase !== 'listen') return;
+async function beginLangMemoryQuestion({ speakPrompt = true } = {}) {
+    if (langMemoryState.phase === 'question') return;
     if (langMemoryState.locked) return;
 
     const stageBox = document.getElementById('lang-memory-stage');
@@ -2624,30 +3049,23 @@ async function beginLangMemoryQuestion() {
     langMemoryState.locked = true;
     langMemoryState.phase = 'question';
 
-    const ready = document.getElementById('btn-lang-memory-ready');
-    if (ready) ready.disabled = true;
-
     const words = langMemoryState.words.slice();
     const missing = langMemoryState.missing;
 
-    const difficulty = getGameDifficulty('lang_memory') || {};
-    const stage = getDimensionStage('G');
-    const maxLevel = LANG_MEMORY_LEVELS.length || 1;
-    const level = clamp(parseInt(difficulty.level || '1', 10) || 1, 1, maxLevel);
     const info = document.getElementById('lang-memory-info');
     if (info) {
-        const said = `Welches Wort fehlt?`;
-        info.textContent = stage >= 3
-            ? `Kannst du herausfinden welches Wort fehlt? (Level ${level}/${maxLevel}) Drück auf 🔊 um zu hören: "${said}"`
-            : `Kannst du herausfinden welches Wort fehlt? (Level ${level}/${maxLevel}) Drück auf 🔊 um zu hören: "${said}"`;
+        info.textContent = '';
     }
 
-    stageBox.innerHTML = `<p style="font-weight:800;">❓ Welches Wort fehlt nun?</p>`;
+    setLangMemoryStageText(LANG_MEMORY_QUESTION_TEXT);
     options.innerHTML = '';
+    options.classList.add('is-framed');
+    setLangMemoryArrowVisible(true);
 
     const cards = Array.from(present.querySelectorAll('.word-card'));
     const missingIdx = words.indexOf(missing);
     if (cards[missingIdx]) {
+        cards[missingIdx].classList.add('is-missing');
         const wrap = cards[missingIdx].querySelector('.word-image-wrap');
         if (wrap) wrap.innerHTML = '<div class="placeholder">?</div>';
     }
@@ -2671,21 +3089,84 @@ async function beginLangMemoryQuestion() {
                 if (langMemoryState.locked) return;
                 langMemoryState.locked = true;
                 setFocusTargets([]);
-                await handleLangMemorySelection(w);
+                if (el) el.classList.add('selected');
+                await handleLangMemorySelection(w, el);
             }
         });
         options.appendChild(card);
     });
+
+    if (speakPrompt) await speakLangMemoryQuestion(true);
 }
 
-async function handleLangMemorySelection(choice) {
+async function animateLangMemoryInsertIntoMissing(choiceCardEl) {
+    const present = document.getElementById('lang-memory-present');
+    if (!present) return false;
+    const missingCard = present.querySelector('.word-card.is-missing');
+    const targetWrap = missingCard ? missingCard.querySelector('.word-image-wrap') : null;
+    const srcImg = choiceCardEl ? choiceCardEl.querySelector('img') : null;
+    const src = srcImg?.getAttribute('src') || srcImg?.src || '';
+    if (!missingCard || !targetWrap || !src) return false;
+
+    const rect = targetWrap.getBoundingClientRect();
+    const fly = new Image();
+    fly.src = src;
+    fly.alt = '';
+    fly.style.position = 'fixed';
+    fly.style.left = `${rect.left}px`;
+    fly.style.top = `${rect.top}px`;
+    fly.style.width = `${rect.width}px`;
+    fly.style.height = `${rect.height}px`;
+    fly.style.objectFit = 'contain';
+    fly.style.zIndex = '9999';
+    fly.style.borderRadius = '14px';
+    fly.style.boxShadow = '0 14px 40px rgba(0,0,0,0.18)';
+    fly.style.transform = 'translateY(-150px)';
+    fly.style.opacity = '1';
+    fly.style.transition = 'transform 1150ms cubic-bezier(0.22, 0.61, 0.36, 1)';
+    document.body.appendChild(fly);
+
+    fly.getBoundingClientRect();
+    fly.style.transform = 'translateY(0)';
+
+    await new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            resolve(true);
+        };
+        fly.addEventListener('transitionend', finish, { once: true });
+        setTimeout(finish, 1300);
+    });
+
+    try { fly.remove(); } catch {}
+
+    targetWrap.innerHTML = '';
+    const img = new Image();
+    img.alt = langMemoryState.missing || '';
+    img.src = src;
+    targetWrap.appendChild(img);
+    missingCard.classList.remove('is-missing');
+    missingCard.classList.add('correct');
+    return true;
+}
+
+async function handleLangMemorySelection(choice, choiceEl) {
     const p = getFeedbackPhrases();
     const correct = choice === langMemoryState.missing;
     const responseMs = Math.round(nowMs() - (langMemoryState.promptStartedAt || nowMs()));
     const repetitions = langMemoryState.repetitions || 0;
 
+    const options = document.getElementById('lang-memory-options');
+    const optionCards = options ? Array.from(options.querySelectorAll('.word-card')) : [];
+    optionCards.forEach(el => el.classList.remove('selected', 'wrong', 'correct'));
+    if (choiceEl) choiceEl.classList.add('selected');
+
     if (correct) {
-        await speakAsync(p.confirm, { rate: 0.7, pitch: 1.05 });
+        await speakAsync(choice, { rate: 0.7, pitch: 1.05, cancelBefore: true });
+        await animateLangMemoryInsertIntoMissing(choiceEl);
+        await speakAsync('Richtig toll gemacht', { rate: 0.7, pitch: 1.05, cancelBefore: false });
         recordOutcomeForDimensions({ gameId: 'lang_memory', dimensions: ['G', 'C', 'A'], correct: true, responseMs, repetitions });
         const cur = adaptDifficultyGeneric('lang_memory', { correct: true, responseMs, repetitions });
         const nextDelay = clamp((getGameDifficulty('lang_memory')?.delayMs ?? 950) - (cur.stableStreak >= 3 ? 120 : 60), 450, 1500);
@@ -2698,15 +3179,22 @@ async function handleLangMemorySelection(choice) {
         return;
     }
 
-    await speakAsync(p.model, { rate: 0.7, pitch: 1.05 });
-    await speakAsync(langMemoryState.missing, { rate: 0.62, pitch: 1.02 });
+    if (choiceEl) choiceEl.classList.add('wrong');
+    await speakAsync(choice, { rate: 0.7, pitch: 1.05, cancelBefore: true });
+    setLangMemoryStageText('Probier es nochmal');
+    await speakAsync('Probier es nochmal', { rate: 0.7, pitch: 1.05, cancelBefore: false });
     recordOutcomeForDimensions({ gameId: 'lang_memory', dimensions: ['G', 'C', 'A'], correct: false, responseMs, repetitions: repetitions + 1, errorCluster: `${langMemoryState.missing}:${choice}` });
     adaptDifficultyGeneric('lang_memory', { correct: false, responseMs, repetitions: repetitions + 1 });
     const nextDelay = clamp((getGameDifficulty('lang_memory')?.delayMs ?? 950) + 140, 450, 1500);
     setGameDifficulty('lang_memory', { delayMs: nextDelay });
     langMemoryState.repetitions = repetitions + 1;
-    await sleep(450);
-    await startLangMemoryRound(false);
+    setTimeout(() => {
+        if (choiceEl) choiceEl.classList.remove('wrong');
+        if (screens.lang_memory?.classList?.contains('active') && langMemoryState.phase === 'question') {
+            setLangMemoryStageText(LANG_MEMORY_QUESTION_TEXT);
+        }
+    }, 650);
+    langMemoryState.locked = false;
 }
 
 // Satz ergänzen (E): rezeptives Entscheiden – Grammatik-Intuition über Plausibilität + Struktur.
@@ -2743,7 +3231,42 @@ const SENTENCE_ITEMS = [
     { level: 29, fragment: 'Beim Vorlesen höre ich', endings: ['gut zu.', 'aus dem Fenster.', 'in die Schuhe.'], correct: 0 },
     { level: 30, fragment: 'Wenn ich fertig bin, drücke ich', endings: ['auf Weiter.', 'auf den Regen.', 'auf die Wolke.'], correct: 0 }
 ];
-let sentenceState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, selectedIndex: null };
+let sentenceState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, selectedIndex: null, phase: 'intro' };
+let sentenceLastOpenAt = 0;
+let sentenceIntroToken = 0;
+let sentenceNextAttentionTimeout = null;
+
+const SENTENCE_INTRO_TEXT = 'Gleich hörst du einen Satz. Hör gut zu und such dir das Bild aus, das am besten dazu passt.\nWenn du bereit bist, drück auf den Lautsprecher.';
+const SENTENCE_START_HINT = 'Drück auf 🔊 um zu hören.';
+const SENTENCE_READY_TEXT = 'Such dir etwas aus.\nIch lese es dir gerne vor.\nDer Lautsprecher sagt es nochmal.\nDer grüne Knopf zeigt dir die Lösung.';
+
+function setSentenceStageText(text) {
+    const stageBox = document.getElementById('sentence-stage');
+    if (!stageBox) return;
+    const t = String(text || '').trim();
+    stageBox.innerHTML = '';
+    if (!t) return;
+    const p = document.createElement('p');
+    p.style.margin = '0';
+    p.style.lineHeight = '1.35';
+    p.style.whiteSpace = 'pre-line';
+    p.textContent = t;
+    stageBox.appendChild(p);
+}
+
+function flashSentenceNextAttention(ms = 2000) {
+    const btn = document.getElementById('btn-sentence-next');
+    if (!btn) return;
+    btn.classList.add('is-attention');
+    if (sentenceNextAttentionTimeout) {
+        clearTimeout(sentenceNextAttentionTimeout);
+        sentenceNextAttentionTimeout = null;
+    }
+    sentenceNextAttentionTimeout = setTimeout(() => {
+        btn.classList.remove('is-attention');
+        sentenceNextAttentionTimeout = null;
+    }, Math.max(0, ms || 0));
+}
 
 function updateSentenceProgress(level, maxLevel) {
     const fill = document.getElementById('sentence-progress-fill');
@@ -2755,8 +3278,11 @@ function updateSentenceProgress(level, maxLevel) {
 }
 
 async function openSentenceGame() {
+    const t = nowMs();
+    if (t - sentenceLastOpenAt < 650) return;
+    sentenceLastOpenAt = t;
     showScreen('sentence');
-    sentenceState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, selectedIndex: null };
+    sentenceState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, selectedIndex: null, phase: 'intro' };
     getOrInitGameDifficulty('sentence', { paceMs: 850, level: 1, stableStreak: 0 });
     const replay = document.getElementById('btn-sentence-replay');
     if (replay) replay.onclick = async () => replaySentencePrompt();
@@ -2770,6 +3296,20 @@ async function openSentenceGame() {
     const diff = getGameDifficulty('sentence') || {};
     updateSentenceProgress(clamp(diff.level || 1, 1, SENTENCE_MAX_LEVEL), SENTENCE_MAX_LEVEL);
     await startSentenceRound(true);
+
+    const token = ++sentenceIntroToken;
+    setTimeout(async () => {
+        if (token !== sentenceIntroToken) return;
+        if (!screens.sentence?.classList?.contains('active')) return;
+        if (sentenceState.phase !== 'intro') return;
+        if (sentenceState.locked) return;
+        const name = String(currentChild?.name || '').trim();
+        const greet = name ? `Hallo ${name}! ${SENTENCE_INTRO_TEXT}` : `Hallo! ${SENTENCE_INTRO_TEXT}`;
+        sentenceState.locked = true;
+        setSentenceStageText(greet);
+        await speakAsync(greet, { rate: 0.7, pitch: 1.05 });
+        sentenceState.locked = false;
+    }, 1500);
 }
 
 async function replaySentencePrompt() {
@@ -2777,8 +3317,11 @@ async function replaySentencePrompt() {
     const replay = document.getElementById('btn-sentence-replay');
     sentenceState.locked = true;
     if (replay) replay.disabled = true;
+    sentenceIntroToken += 1;
+    sentenceState.phase = 'choose';
     await speakAsync(sentenceState.item.fragment, { rate: 0.7, pitch: 1.05 });
-    await speakAsync('Was passt am besten?', { rate: 0.7, pitch: 1.05 });
+    await speakAsync(SENTENCE_READY_TEXT, { rate: 0.7, pitch: 1.05 });
+    setSentenceStageText(SENTENCE_READY_TEXT);
     sentenceState.promptStartedAt = nowMs();
     if (replay) replay.disabled = false;
     sentenceState.locked = false;
@@ -2794,19 +3337,28 @@ async function startSentenceRound(newItem) {
     sentenceState.selectedIndex = null;
     sentenceState.locked = true;
     sentenceState.promptStartedAt = 0;
+    sentenceState.phase = 'intro';
 
     const info = document.getElementById('sentence-info');
-    if (info) info.textContent = `Unterlevel ${level}/${SENTENCE_MAX_LEVEL}. Drück auf 🔊 um zu hören.`;
+    if (info) info.textContent = '';
+    const levelEl = document.getElementById('sentence-level');
+    if (levelEl) levelEl.textContent = `Unterlevel ${level}/${SENTENCE_MAX_LEVEL}`;
     updateSentenceProgress(level, SENTENCE_MAX_LEVEL);
-    const stageBox = document.getElementById('sentence-stage');
-    if (stageBox) stageBox.innerHTML = `<p>👂</p>`;
+    setSentenceStageText(SENTENCE_START_HINT);
     const opts = document.getElementById('sentence-options');
     if (!opts) return;
     opts.innerHTML = '';
     const thumbs = document.getElementById('btn-sentence-thumbs-up');
     if (thumbs) thumbs.disabled = true;
     const next = document.getElementById('btn-sentence-next');
-    if (next) next.style.display = 'none';
+    if (sentenceNextAttentionTimeout) {
+        clearTimeout(sentenceNextAttentionTimeout);
+        sentenceNextAttentionTimeout = null;
+    }
+    if (next) {
+        next.disabled = true;
+        next.classList.remove('is-attention');
+    }
 
     const endings = item.endings.map((t, i) => ({ text: t, i }));
     const shuffled = shuffle(endings);
@@ -2828,6 +3380,7 @@ async function startSentenceRound(newItem) {
         card.appendChild(wrap);
         card.addEventListener('click', async () => {
             if (sentenceState.locked) return;
+            if (sentenceState.phase !== 'choose') return;
             sentenceState.locked = true;
             await selectSentenceOption(card, opt.i);
         });
@@ -2842,7 +3395,7 @@ async function selectSentenceOption(cardEl, selectedIndex) {
     const opts = document.getElementById('sentence-options');
     if (opts) {
         Array.from(opts.querySelectorAll('.word-card')).forEach(el => {
-            el.classList.remove('selected', 'wrong', 'correct');
+            el.classList.remove('selected', 'maybe', 'wrong', 'correct');
         });
     }
     if (cardEl) cardEl.classList.add('selected');
@@ -2854,7 +3407,6 @@ async function selectSentenceOption(cardEl, selectedIndex) {
 }
 
 async function confirmSentenceSelection() {
-    const p = getFeedbackPhrases();
     const item = sentenceState.item;
     if (!item) return;
     const selectedIndex = sentenceState.selectedIndex;
@@ -2873,20 +3425,24 @@ async function confirmSentenceSelection() {
 
     if (correct) {
         if (selectedCard) selectedCard.classList.add('correct');
-        await speakAsync(p.confirm, { rate: 0.7, pitch: 1.05 });
         await speakAsync(`${item.fragment} ${item.endings[item.correct]}`, { rate: 0.7, pitch: 1.05 });
+        const praise = 'Toll, gut gemacht! Drück jetzt den blauen Knopf. Dann geht es weiter.';
+        setSentenceStageText(praise);
+        const next = document.getElementById('btn-sentence-next');
+        if (next) next.disabled = false;
+        flashSentenceNextAttention(2000);
+        await speakAsync(praise, { rate: 0.7, pitch: 1.05 });
         recordOutcomeForDimensions({ gameId: 'sentence', dimensions: ['E', 'A', 'D'], correct: true, responseMs, repetitions });
         const cur = adaptDifficultyGeneric('sentence', { correct: true, responseMs, repetitions });
         const nextLevel = clamp((getGameDifficulty('sentence')?.level ?? 1) + (cur.stableStreak >= 4 ? 1 : 0), 1, SENTENCE_MAX_LEVEL);
         setGameDifficulty('sentence', { level: nextLevel });
         sentenceState.repetitions = 0;
-        const next = document.getElementById('btn-sentence-next');
-        if (next) next.style.display = 'inline-block';
         return;
     }
 
-    await speakAsync(p.model, { rate: 0.7, pitch: 1.05 });
-    await speakAsync(`${item.fragment} ${item.endings[item.correct]}`, { rate: 0.62, pitch: 1.02 });
+    if (selectedCard) selectedCard.classList.add('maybe');
+    setSentenceStageText('Probier es nochmal');
+    await speakAsync('Probier es nochmal', { rate: 0.7, pitch: 1.05 });
     recordOutcomeForDimensions({ gameId: 'sentence', dimensions: ['E', 'A', 'D'], correct: false, responseMs, repetitions: repetitions + 1, errorCluster: `${item.fragment}:${selectedIndex}` });
     adaptDifficultyGeneric('sentence', { correct: false, responseMs, repetitions: repetitions + 1 });
     const nextLevel = clamp((getGameDifficulty('sentence')?.level ?? 1) - 1, 1, SENTENCE_MAX_LEVEL);
@@ -2905,7 +3461,7 @@ const SEMANTIC_ITEMS = [
     { level: 2, center: 'tisch', options: ['stuhl', 'wolke', 'pferd'], correct: 'stuhl', expansion: 'Am Tisch sitzt man oft auf einem Stuhl.' },
     { level: 3, center: 'fenster', options: ['licht', 'fisch', 'hose'], correct: 'licht', expansion: 'Durch ein Fenster kommt Licht ins Zimmer.' }
 ];
-let semanticState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, expansion: '' };
+let semanticState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, expansion: '', selectedChoice: null };
 
 function updateSemanticProgress(level, maxLevel) {
     const fill = document.getElementById('semantic-progress-fill');
@@ -2918,10 +3474,17 @@ function updateSemanticProgress(level, maxLevel) {
 
 async function openSemanticGame() {
     showScreen('semantic');
-    semanticState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, expansion: '' };
+    semanticState = { item: null, repetitions: 0, promptStartedAt: 0, locked: false, expansion: '', selectedChoice: null };
     getOrInitGameDifficulty('semantic', { paceMs: 850, level: 1, stableStreak: 0 });
     const replay = document.getElementById('btn-semantic-replay');
     if (replay) replay.onclick = async () => replaySemanticPrompt();
+    const confirm = document.getElementById('btn-semantic-thumbs-up');
+    if (confirm) confirm.onclick = async () => {
+        if (semanticState.locked) return;
+        if (!semanticState.selectedChoice) return;
+        semanticState.locked = true;
+        await handleSemanticSelection(semanticState.selectedChoice);
+    };
     const expand = document.getElementById('btn-semantic-expand');
     if (expand) expand.onclick = async () => { if (semanticState.expansion) await speakAsync(semanticState.expansion, { rate: 0.7, pitch: 1.05 }); };
     const diff = getGameDifficulty('semantic') || {};
@@ -2950,14 +3513,15 @@ async function startSemanticRound(newItem) {
     const item = newItem || !semanticState.item ? pool[Math.floor(Math.random() * pool.length)] : semanticState.item;
     semanticState.item = item;
     semanticState.expansion = item.expansion || '';
+    semanticState.selectedChoice = null;
     semanticState.locked = true;
     semanticState.promptStartedAt = 0;
 
-    const info = document.getElementById('semantic-info');
-    if (info) info.textContent = `Unterlevel ${level}/${SEMANTIC_MAX_LEVEL}. Drück auf 🔊 um zu hören.`;
     updateSemanticProgress(level, SEMANTIC_MAX_LEVEL);
+    const levelEl = document.getElementById('semantic-level');
+    if (levelEl) levelEl.textContent = `Unterlevel ${level}/${SEMANTIC_MAX_LEVEL}`;
     const stageBox = document.getElementById('semantic-stage');
-    if (stageBox) stageBox.innerHTML = `<p>👂</p>`;
+    if (stageBox) stageBox.innerHTML = `<div class="semantic-ear-hint"><span class="semantic-ear-icon">👂</span><span class="semantic-ear-text">Hör gut zu und sag uns, was passt dazu?</span></div>`;
     const center = document.getElementById('semantic-center');
     const opts = document.getElementById('semantic-options');
     if (!center || !opts) return;
@@ -2978,8 +3542,13 @@ async function startSemanticRound(newItem) {
             showMicroLabel: showHints,
             onClick: async (el) => {
                 if (semanticState.locked) return;
-                semanticState.locked = true;
-                await handleSemanticSelection(w);
+                const prevSel = opts.querySelector('.word-card.selected');
+                if (prevSel) prevSel.classList.remove('selected');
+                if (el) el.classList.add('selected');
+                semanticState.selectedChoice = w;
+                const confirm = document.getElementById('btn-semantic-thumbs-up');
+                if (confirm) confirm.disabled = false;
+                speakWord(displayWordFromKey(w));
             }
         });
         opts.appendChild(card);
@@ -2987,6 +3556,8 @@ async function startSemanticRound(newItem) {
 
     const expandBtn = document.getElementById('btn-semantic-expand');
     if (expandBtn) expandBtn.style.display = 'none';
+    const confirm = document.getElementById('btn-semantic-thumbs-up');
+    if (confirm) confirm.disabled = true;
     semanticState.locked = false;
 }
 
@@ -2999,6 +3570,11 @@ async function handleSemanticSelection(choice) {
     const repetitions = semanticState.repetitions || 0;
 
     if (correct) {
+        const opts = document.getElementById('semantic-options');
+        if (opts) {
+            const picked = opts.querySelector('.word-card.selected');
+            if (picked) picked.classList.add('correct');
+        }
         await speakAsync(p.confirm, { rate: 0.7, pitch: 1.05 });
         recordOutcomeForDimensions({ gameId: 'semantic', dimensions: ['D', 'C', 'A'], correct: true, responseMs, repetitions });
         const cur = adaptDifficultyGeneric('semantic', { correct: true, responseMs, repetitions });
@@ -3018,6 +3594,11 @@ async function handleSemanticSelection(choice) {
         return;
     }
 
+    const opts = document.getElementById('semantic-options');
+    if (opts) {
+        const correctEl = Array.from(opts.querySelectorAll('.word-card')).find(el => el.dataset.word === normalizeWordKey(item.correct));
+        if (correctEl) correctEl.classList.add('correct');
+    }
     await speakAsync(p.model, { rate: 0.7, pitch: 1.05 });
     await speakAsync(`${displayWordFromKey(item.center)} passt zu ${displayWordFromKey(item.correct)}.`, { rate: 0.62, pitch: 1.02 });
     recordOutcomeForDimensions({ gameId: 'semantic', dimensions: ['D', 'C', 'A'], correct: false, responseMs, repetitions: repetitions + 1, errorCluster: `${item.center}:${choice}` });
@@ -3037,6 +3618,23 @@ const LISTEN_LEVELS = {
     3: { pool: ['note', 'rote', 'leiter', 'weiter', 'licht', 'pflicht'], minimal: true }
 };
 let listenState = { a: '', b: '', same: false, repetitions: 0, promptStartedAt: 0, locked: false };
+let listenLastOpenAt = 0;
+let listenIntroToken = 0;
+let listenReplayAttentionTimeout = null;
+
+function flashListenReplayAttention(ms = 2000) {
+    const btn = document.getElementById('btn-listen-replay');
+    if (!btn) return;
+    btn.classList.add('is-attention');
+    if (listenReplayAttentionTimeout) {
+        clearTimeout(listenReplayAttentionTimeout);
+        listenReplayAttentionTimeout = null;
+    }
+    listenReplayAttentionTimeout = setTimeout(() => {
+        btn.classList.remove('is-attention');
+        listenReplayAttentionTimeout = null;
+    }, Math.max(0, ms || 0));
+}
 
 function updateListenProgress(level, maxLevel) {
     const fill = document.getElementById('listen-progress-fill');
@@ -3105,6 +3703,9 @@ function renderListenRevealStage(a, b, tier) {
 }
 
 async function openListenGame() {
+    const t = nowMs();
+    if (t - listenLastOpenAt < 650) return;
+    listenLastOpenAt = t;
     showScreen('listen');
     listenState = { a: '', b: '', same: false, repetitions: 0, promptStartedAt: 0, locked: false };
     getOrInitGameDifficulty('listen', { paceMs: 850, gapMs: 520, level: 1, stableStreak: 0 });
@@ -3117,12 +3718,35 @@ async function openListenGame() {
     const diff = getGameDifficulty('listen') || {};
     updateListenProgress(clamp(diff.level || 1, 1, LISTEN_MAX_LEVEL), LISTEN_MAX_LEVEL);
     await nextListenTrial(true);
+
+    const token = ++listenIntroToken;
+    setTimeout(async () => {
+        if (token !== listenIntroToken) return;
+        if (!screens.listen?.classList?.contains('active')) return;
+        const btn = document.getElementById('btn-listen-replay');
+        if (!btn) return;
+        const prevDisabled = btn.disabled;
+        btn.disabled = true;
+        await speakAsync('Hör gut zu. Ich sage dir zwei Wörter.', { rate: 0.7, pitch: 1.05 });
+        await speakAsync('Klingen sie gleich drückst du den grünen Knopf.', { rate: 0.7, pitch: 1.05, cancelBefore: false });
+        await speakAsync('Klingen sie nicht gleich drückst du den blauen Knopf.', { rate: 0.7, pitch: 1.05, cancelBefore: false });
+        flashListenReplayAttention(2000);
+        await speakAsync('Drück auf das Fragezeichen.', { rate: 0.7, pitch: 1.05, cancelBefore: false });
+        await speakAsync('Und wir fangen an.', { rate: 0.7, pitch: 1.05, cancelBefore: false });
+        btn.disabled = prevDisabled;
+    }, 1500);
 }
 
 async function replayListenPrompt() {
     if (!listenState.a) return;
     const replay = document.getElementById('btn-listen-replay');
     if (replay?.disabled) return;
+    listenIntroToken += 1;
+    if (listenReplayAttentionTimeout) {
+        clearTimeout(listenReplayAttentionTimeout);
+        listenReplayAttentionTimeout = null;
+    }
+    if (replay) replay.classList.remove('is-attention');
     listenState.locked = true;
     if (replay) replay.disabled = true;
     const diff = getGameDifficulty('listen') || {};
@@ -3144,9 +3768,26 @@ async function nextListenTrial(newPair) {
     const diff = getGameDifficulty('listen') || {};
     const stageBox = document.getElementById('listen-stage');
     const info = document.getElementById('listen-info');
-    if (info) info.textContent = '';
-    if (stageBox) stageBox.innerHTML = `<p style="font-size:2rem;">👂</p>`;
     const sublevel = clamp(diff.level || 1, 1, LISTEN_MAX_LEVEL);
+    const levelEl = document.getElementById('listen-level');
+    if (levelEl) levelEl.textContent = `Unterlevel ${sublevel}/${LISTEN_MAX_LEVEL}`;
+    if (info) {
+        info.innerHTML = `
+            <span class="listen-info-line">Drück auf „Frag mich etwas ❓“.</span>
+            <span class="listen-info-line">
+                Sind die Wörter gleich
+                <button type="button" class="listen-mini-symbol-btn same" aria-label="gleich">＝</button>
+                oder anders
+                <button type="button" class="listen-mini-symbol-btn diff" aria-label="anders">≠</button>
+                ?
+            </span>
+        `;
+        const miniSame = info.querySelector('.listen-mini-symbol-btn.same');
+        const miniDiff = info.querySelector('.listen-mini-symbol-btn.diff');
+        if (miniSame) miniSame.onclick = async () => { if (!listenState.locked) await handleListenChoice(true); };
+        if (miniDiff) miniDiff.onclick = async () => { if (!listenState.locked) await handleListenChoice(false); };
+    }
+    if (stageBox) stageBox.innerHTML = `<div class="listen-ear-hint"><span class="listen-ear-icon">👂</span><span class="listen-ear-text">Hör gut zu</span></div>`;
     updateListenProgress(sublevel, LISTEN_MAX_LEVEL);
     const tier = getListenTier(sublevel);
     const cfg = LISTEN_LEVELS[tier] || LISTEN_LEVELS[1];
@@ -3177,7 +3818,6 @@ async function nextListenTrial(newPair) {
     listenState.locked = true;
     listenState.promptStartedAt = 0;
     if (newPair) listenState.repetitions = 0;
-    if (info) info.textContent = `Unterlevel ${sublevel}/${LISTEN_MAX_LEVEL}. Drück auf „Frage wiederholen“. Sind die Wörter gleich oder anders?`;
 }
 
 async function playListenPair(a, b, gapMs, paceMs) {
@@ -3281,17 +3921,19 @@ function renderMetadataScreen() {
     const renderMetricsCards = (profile) => {
         const gameRows = games.map(gid => {
             const meta = GAME_METADATA[gid];
-            const gm = profile.gameMetrics?.[gid] || { trials: 0, correct: 0, repeats: 0, avgMs: null, totalMs: 0, errorClusters: {} };
+            const gm = profile.gameMetrics?.[gid] || { trials: 0, correct: 0, repeats: 0, avgMs: null, totalMs: 0, runs: 0, sessionMs: 0, errorClusters: {} };
             const diff = profile.gameDifficulty?.[gid] || {};
             const rate = gm.trials ? Math.round((gm.correct / gm.trials) * 100) : 0;
             const errTop = Object.entries(gm.errorClusters || {}).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} (${v})`).join(', ') || '–';
             const focus = meta.focusAreas.map(a => `${a} – ${PEDAGOGY.dimensions[a]}`).join(', ');
+            const runs = typeof gm.runs === 'number' ? gm.runs : (gm.repeats || 0);
+            const sessionMs = typeof gm.sessionMs === 'number' ? gm.sessionMs : (gm.totalMs || 0);
             const baseMetrics = `
                 <div class="meta-metrics" style="margin-top:10px;">
                     <div class="progress-info"><span>Spiel</span><span>${meta.title}</span></div>
                     <div class="progress-info"><span>Förderbereich</span><span>${focus}</span></div>
-                    <div class="progress-info"><span>Wiederholungen</span><span>${gm.repeats || 0}x</span></div>
-                    <div class="progress-info"><span>Gesamtzeit</span><span>${gm.totalMs ? formatDuration(gm.totalMs) : '–'}</span></div>
+                    <div class="progress-info"><span>Wiederholungen</span><span>${runs}x</span></div>
+                    <div class="progress-info"><span>Gesamtzeit</span><span>${sessionMs ? formatDuration(sessionMs) : '–'}</span></div>
                     <div class="progress-info"><span>Fortschritt</span><span>${rate}%</span></div>
                     <div class="progress-bar"><div class="progress-fill" style="width:${rate}%"></div></div>
                 </div>
@@ -3345,11 +3987,11 @@ function renderMetadataScreen() {
     if (metadataState.view === 'profile' && selectedChild) {
         const profile = loadSupportProfile(selectedChild.id);
         const dims = profile.dimensions || {};
-        const totalMsAllGames = games.reduce((sum, gid) => sum + (profile.gameMetrics?.[gid]?.totalMs || 0), 0);
+        const totalMsAllGames = games.reduce((sum, gid) => sum + (profile.gameMetrics?.[gid]?.sessionMs || profile.gameMetrics?.[gid]?.totalMs || 0), 0);
         const repeatsByDimension = {};
         games.forEach(gid => {
             const meta = GAME_METADATA[gid];
-            const reps = profile.gameMetrics?.[gid]?.repeats || 0;
+            const reps = profile.gameMetrics?.[gid]?.runs || profile.gameMetrics?.[gid]?.repeats || 0;
             (meta?.focusAreas || []).forEach(dim => {
                 repeatsByDimension[dim] = (repeatsByDimension[dim] || 0) + reps;
             });
@@ -3732,35 +4374,43 @@ function renderProfileCard() {
     const group = currentChild.group || '–';
     container.classList.toggle('edit-locked', !profileEditUnlocked);
     container.innerHTML = `
-        <div class="action-buttons" style="margin:0 0 12px 0;">
-            <button id="btn-profile-edit-toggle" class="btn btn-secondary">${profileEditUnlocked ? 'Bearbeiten beenden' : 'Details bearbeiten'}</button>
-        </div>
-        <div class="profile-row">
-            <span class="label">Name</span>
-            <span class="value" id="pc-name">${currentChild.name}</span>
-            <button class="icon-btn" id="edit-name" aria-label="Name bearbeiten">✎</button>
-        </div>
-        <div class="profile-row">
-            <span class="label">Alter</span>
-            <span class="value" id="pc-age">${currentChild.age}</span>
-            <button class="icon-btn" id="edit-age" aria-label="Alter bearbeiten">✎</button>
-        </div>
-        <div class="profile-row">
-            <span class="label">Gruppe</span>
-            <span class="value" id="pc-group">${group}</span>
-            <button class="icon-btn" id="edit-group" aria-label="Gruppe bearbeiten">✎</button>
+        <div class="overview-profile-line" role="group" aria-label="Kinderdetails">
+            <div class="overview-profile-field">
+                <span class="overview-profile-label">Avatar:</span>
+                <span class="overview-profile-value" id="pc-avatar">${currentChild.avatar || '👤'}</span>
+                <button class="icon-btn" id="edit-avatar" aria-label="Avatar bearbeiten">✎</button>
+            </div>
+            <div class="overview-profile-field">
+                <span class="overview-profile-label">Name:</span>
+                <span class="overview-profile-value" id="pc-name">${currentChild.name}</span>
+                <button class="icon-btn" id="edit-name" aria-label="Name bearbeiten">✎</button>
+            </div>
+            <div class="overview-profile-field">
+                <span class="overview-profile-label">Alter:</span>
+                <span class="overview-profile-value" id="pc-age">${currentChild.age}</span>
+                <button class="icon-btn" id="edit-age" aria-label="Alter bearbeiten">✎</button>
+            </div>
+            <div class="overview-profile-field">
+                <span class="overview-profile-label">Gruppe:</span>
+                <span class="overview-profile-value" id="pc-group">${group}</span>
+                <button class="icon-btn" id="edit-group" aria-label="Gruppe bearbeiten">✎</button>
+            </div>
         </div>
     `;
-    const toggle = document.getElementById('btn-profile-edit-toggle');
-    if (toggle) {
-        toggle.onclick = () => {
-            profileEditUnlocked = !profileEditUnlocked;
-            renderProfileCard();
-        };
-    }
+    const headerToggle = document.getElementById('btn-profile-edit-toggle');
+    if (headerToggle) headerToggle.textContent = profileEditUnlocked ? 'Bearbeiten beenden' : 'Details bearbeiten';
+    const editAvatar = document.getElementById('edit-avatar');
     const editName = document.getElementById('edit-name');
     const editAge = document.getElementById('edit-age');
     const editGroup = document.getElementById('edit-group');
+    editAvatar.onclick = () => inlineSelect('pc-avatar', ['👧', '👦', '🧒', '👶', '👤'], v => {
+        const val = String(v || '').trim() || '👤';
+        currentChild.avatar = val;
+        dataManager.saveUsers();
+        const headerAvatar = document.getElementById('child-avatar');
+        if (headerAvatar) headerAvatar.textContent = val;
+        renderProfileCard();
+    });
     editName.onclick = () => inlineEdit('pc-name', 'text', v => {
         const val = v.trim();
         if (val) {
@@ -3804,6 +4454,32 @@ function inlineEdit(valueId, type, onSave) {
         if (e.key === 'Escape') renderProfileCard();
     });
     input.addEventListener('blur', finalize);
+}
+
+function inlineSelect(valueId, options, onSave) {
+    const el = document.getElementById(valueId);
+    if (!el) return;
+    const current = String(el.textContent || '').trim();
+    const select = document.createElement('select');
+    select.className = 'voice-select';
+    (options || []).forEach(opt => {
+        const o = document.createElement('option');
+        o.value = String(opt);
+        o.textContent = String(opt);
+        select.appendChild(o);
+    });
+    select.value = current;
+    el.replaceWith(select);
+    select.focus();
+    const finalize = () => {
+        onSave(select.value);
+    };
+    select.addEventListener('change', finalize);
+    select.addEventListener('keydown', e => {
+        if (e.key === 'Enter') finalize();
+        if (e.key === 'Escape') renderProfileCard();
+    });
+    select.addEventListener('blur', finalize);
 }
 
 // Render Levels-Grid
