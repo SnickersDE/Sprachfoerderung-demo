@@ -937,7 +937,15 @@ function setupEventListeners() {
     }
     const landingExperts = document.getElementById('btn-landing-experts');
     if (landingExperts) {
-        landingExperts.addEventListener('click', () => {
+            landingExperts.addEventListener('click', async () => {
+            disableLandingLogoTransitionOnce = true;
+            stopLandingTitleVideo();
+            const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+            if (isMobile) {
+                const img = document.getElementById('landing-title-img');
+                if (img) img.classList.add('landing-logo-bump');
+                await sleep(260);
+            }
             showScreen('forum');
             renderForum();
         });
@@ -4830,3 +4838,4 @@ function setupLandingDice() {
     window.addEventListener('touchmove', onMove, { passive: false });
     window.addEventListener('touchend', onUp);
 }
+
